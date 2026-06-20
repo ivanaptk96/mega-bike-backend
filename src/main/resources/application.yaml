@@ -1,0 +1,3 @@
+spring:
+  application:
+    name: mega-bike-backend
