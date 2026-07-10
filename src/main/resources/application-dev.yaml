@@ -1,3 +1,7 @@
 spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5433/megabike
+    username: megabike
+    password: megabike
   liquibase:
     change-log: classpath:/db/changelog/db.changelog-dev.xml

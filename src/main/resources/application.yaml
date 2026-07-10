@@ -3,3 +3,10 @@ spring:
     name: mega-bike-backend
   liquibase:
     change-log: classpath:/db/changelog/db.changelog-master.xml
+
+megabike:
+  security:
+    jwt:
+      issuer: mega-bike-backend
+      secret: ${MEGABIKE_JWT_SECRET:local-development-secret-change-before-production}
+      access-token-ttl-seconds: 900

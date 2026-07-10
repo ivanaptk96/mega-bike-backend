@@ -1,9 +1,14 @@
 services:
   postgres:
-    image: 'postgres:latest'
+    image: 'postgres:17'
     environment:
-      - 'POSTGRES_DB=mydatabase'
-      - 'POSTGRES_PASSWORD=secret'
-      - 'POSTGRES_USER=myuser'
+      - 'POSTGRES_DB=megabike'
+      - 'POSTGRES_PASSWORD=megabike'
+      - 'POSTGRES_USER=megabike'
     ports:
-      - '5432'
+      - '5433:5432'
+    volumes:
+      - 'megabike-postgres-data:/var/lib/postgresql/data'
+
+volumes:
+  megabike-postgres-data:

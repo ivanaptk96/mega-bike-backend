@@ -1,0 +1,157 @@
+openapi: 3.1.0
+info:
+  title: Mega Bike API
+  version: 0.0.1
+  description: |
+    API contract for the Mega Bike backend.
+
+    Current implementation status:
+    - POST /api/auth/login is implemented.
+    - JWT access tokens are created on login.
+    - Incoming bearer-token validation is not implemented yet.
+    - Local Docker PostgreSQL is exposed on localhost:5433.
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+tags:
+  - name: Auth
+    description: Authentication endpoints
+paths:
+  /api/auth/login:
+    post:
+      tags:
+        - Auth
+      summary: Log in
+      description: Authenticates a user with email and password and returns a signed JWT access token.
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            examples:
+              admin:
+                summary: Dev admin login
+                value:
+                  email: admin@megabike.local
+                  password: password
+              manager:
+                summary: Dev manager login
+                value:
+                  email: manager@megabike.local
+                  password: password
+              employee:
+                summary: Dev employee login
+                value:
+                  email: employee@megabike.local
+                  password: password
+      responses:
+        '200':
+          description: Login successful.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+              examples:
+                success:
+                  value:
+                    accessToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.example.signature
+                    tokenType: Bearer
+                    expiresInSeconds: 900
+                    expiresAt: '2026-07-10T10:00:00Z'
+                    email: admin@megabike.local
+                    authorities:
+                      - PRODUCT_READ
+                      - PRODUCT_WRITE
+                      - ROLE_ADMIN
+                      - USER_MANAGE
+        '400':
+          description: Request body validation failed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Invalid email or password.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                invalidCredentials:
+                  value:
+                    code: INVALID_CREDENTIALS
+                    message: Invalid email or password.
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    LoginRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 320
+          example: admin@megabike.local
+        password:
+          type: string
+          format: password
+          example: password
+    LoginResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - accessToken
+        - tokenType
+        - expiresInSeconds
+        - expiresAt
+        - email
+        - authorities
+      properties:
+        accessToken:
+          type: string
+          description: Signed JWT access token.
+        tokenType:
+          type: string
+          enum:
+            - Bearer
+        expiresInSeconds:
+          type: integer
+          format: int64
+          example: 900
+        expiresAt:
+          type: string
+          format: date-time
+        email:
+          type: string
+          format: email
+        authorities:
+          type: array
+          items:
+            type: string
+          example:
+            - ROLE_ADMIN
+            - PRODUCT_READ
+            - PRODUCT_WRITE
+    ErrorResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: string
+          example: INVALID_CREDENTIALS
+        message:
+          type: string
+          example: Invalid email or password.

@@ -313,14 +313,32 @@ PRODUCT_WRITE
 
 `JwtService`
 
-Not implemented yet.
+Implemented for access-token creation.
 
 Responsible for:
 
-- creating access tokens
-- validating access tokens
-- extracting user identity
-- extracting authorities if they are embedded in the token
+- creating signed HS256 JWT access tokens
+- embedding issuer, subject, issued-at time, expiration time, and authorities
+- using `MEGABIKE_JWT_SECRET` through `megabike.security.jwt.secret`
+
+Not implemented yet:
+
+- validating access tokens on incoming requests
+- extracting user identity from incoming access tokens
+- extracting authorities from incoming access tokens
+
+Current token settings:
+
+```yaml
+megabike:
+  security:
+    jwt:
+      issuer: mega-bike-backend
+      secret: ${MEGABIKE_JWT_SECRET:local-development-secret-change-before-production}
+      access-token-ttl-seconds: 900
+```
+
+The default secret is only for local development. Production must set `MEGABIKE_JWT_SECRET`.
 
 `JwtAuthenticationFilter`
 
@@ -341,14 +359,36 @@ Then:
 
 `AuthService`
 
-Not implemented yet.
+Partially implemented.
 
 Responsible for:
 
-- login
-- refresh
-- logout
-- current user lookup
+- login. Implemented.
+- refresh. Not implemented yet.
+- logout. Not implemented yet.
+- current user lookup. Not implemented yet.
+
+Current login behavior:
+
+```text
+POST /api/auth/login
+email + password
+        |
+        v
+AuthenticationManager
+        |
+        v
+JpaUserDetailsService loads user by email
+        |
+        v
+BCrypt verifies password_hash
+        |
+        v
+JwtService creates access token
+        |
+        v
+LoginResponse returns token and authorities
+```
 
 ## 8. First Vertical Slice
 
@@ -362,8 +402,8 @@ Step order and current status:
 4. Add `JpaUserDetailsService`. Done.
 5. Add `SecurityConfig`. Done.
 6. Add BCrypt password handling. Done.
-7. Add `POST /api/auth/login`. Not started.
-8. Add JWT access-token generation. Not started.
+7. Add `POST /api/auth/login`. Done.
+8. Add JWT access-token generation. Done.
 9. Add refresh-token persistence. Schema exists, service not started.
 10. Add `GET /api/auth/me`. Not started.
 11. Add an initial admin-user strategy. Dev seed exists, production bootstrap not started.
@@ -430,7 +470,13 @@ src/main/java/com/megabike/identity/domain/UserAccountRepository.java
 src/main/java/com/megabike/identity/domain/RoleRepository.java
 src/main/java/com/megabike/identity/domain/PermissionRepository.java
 src/main/java/com/megabike/identity/domain/RefreshTokenRepository.java
+src/main/java/com/megabike/identity/api/AuthController.java
+src/main/java/com/megabike/identity/api/AuthExceptionHandler.java
+src/main/java/com/megabike/identity/api/LoginRequest.java
+src/main/java/com/megabike/identity/api/LoginResponse.java
+src/main/java/com/megabike/identity/application/AuthService.java
 src/main/java/com/megabike/identity/infrastructure/JpaUserDetailsService.java
+src/main/java/com/megabike/identity/infrastructure/JwtService.java
 src/main/java/com/megabike/identity/infrastructure/SecurityConfig.java
 ```
 
@@ -444,14 +490,16 @@ stateless Spring Security filter chain
 route rules for auth, admin, and internal APIs
 method security support through @EnableMethodSecurity
 database-backed UserDetailsService
+POST /api/auth/login endpoint
+401 response for invalid login credentials
+JWT access token creation
+explicit Spring Boot JSON starter for REST request/response bodies
 ```
 
 Next implementation step:
 
 ```text
-Create AuthService and AuthController for POST /api/auth/login.
+Create JwtAuthenticationFilter and token validation so access tokens can authenticate future requests.
 ```
 
-That will connect the configured `AuthenticationManager`, `JpaUserDetailsService`, and `PasswordEncoder` into a real login endpoint.
-
-After that, implement the Java identity domain around the schema.
+That will make the returned login token useful for calling protected endpoints.
