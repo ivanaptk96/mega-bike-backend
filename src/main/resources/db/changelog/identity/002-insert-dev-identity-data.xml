@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="001-insert-dev-roles" author="codex">
+        <insert tableName="role">
+            <column name="id" value="11111111-1111-1111-1111-111111111111"/>
+            <column name="name" value="ADMIN"/>
+            <column name="created_at" valueDate="2026-01-01T00:00:00Z"/>
+        </insert>
+        <insert tableName="role">
+            <column name="id" value="22222222-2222-2222-2222-222222222222"/>
+            <column name="name" value="MANAGER"/>
+            <column name="created_at" valueDate="2026-01-01T00:00:00Z"/>
+        </insert>
+        <insert tableName="role">
+            <column name="id" value="33333333-3333-3333-3333-333333333333"/>
+            <column name="name" value="EMPLOYEE"/>
+            <column name="created_at" valueDate="2026-01-01T00:00:00Z"/>
+        </insert>
+    </changeSet>
+
+    <changeSet id="002-insert-dev-permissions" author="codex">
+        <insert tableName="permission">
+            <column name="id" value="aaaaaaaa-0000-0000-0000-000000000001"/>
+            <column name="name" value="USER_MANAGE"/>
+            <column name="created_at" valueDate="2026-01-01T00:00:00Z"/>
+        </insert>
+        <insert tableName="permission">
+            <column name="id" value="aaaaaaaa-0000-0000-0000-000000000002"/>
+            <column name="name" value="PRODUCT_READ"/>
+            <column name="created_at" valueDate="2026-01-01T00:00:00Z"/>
+        </insert>
+        <insert tableName="permission">
+            <column name="id" value="aaaaaaaa-0000-0000-0000-000000000003"/>
+            <column name="name" value="PRODUCT_WRITE"/>
+            <column name="created_at" valueDate="2026-01-01T00:00:00Z"/>
+        </insert>
+        <insert tableName="permission">
+            <column name="id" value="aaaaaaaa-0000-0000-0000-000000000004"/>
+            <column name="name" value="SUPPLIER_MANAGE"/>
+            <column name="created_at" valueDate="2026-01-01T00:00:00Z"/>
+        </insert>
+        <insert tableName="permission">
+            <column name="id" value="aaaaaaaa-0000-0000-0000-000000000005"/>
+            <column name="name" value="PURCHASE_ORDER_CREATE"/>
+            <column name="created_at" valueDate="2026-01-01T00:00:00Z"/>
+        </insert>
+        <insert tableName="permission">
+            <column name="id" value="aaaaaaaa-0000-0000-0000-000000000006"/>
+            <column name="name" value="PURCHASE_ORDER_APPROVE"/>
+            <column name="created_at" valueDate="2026-01-01T00:00:00Z"/>
+        </insert>
+        <insert tableName="permission">
+            <column name="id" value="aaaaaaaa-0000-0000-0000-000000000007"/>
+            <column name="name" value="STOCK_RECEIVE"/>
+            <column name="created_at" valueDate="2026-01-01T00:00:00Z"/>
+        </insert>
+        <insert tableName="permission">
+            <column name="id" value="aaaaaaaa-0000-0000-0000-000000000008"/>
+            <column name="name" value="STOCK_ADJUST"/>
+            <column name="created_at" valueDate="2026-01-01T00:00:00Z"/>
+        </insert>
+        <insert tableName="permission">
+            <column name="id" value="aaaaaaaa-0000-0000-0000-000000000009"/>
+            <column name="name" value="REPORT_VIEW"/>
+            <column name="created_at" valueDate="2026-01-01T00:00:00Z"/>
+        </insert>
+    </changeSet>
+
+    <changeSet id="003-insert-dev-role-permissions" author="codex">
+        <insert tableName="role_permission">
+            <column name="role_id" value="11111111-1111-1111-1111-111111111111"/>
+            <column name="permission_id" value="aaaaaaaa-0000-0000-0000-000000000001"/>
+        </insert>
+        <insert tableName="role_permission">
+            <column name="role_id" value="11111111-1111-1111-1111-111111111111"/>
+            <column name="permission_id" value="aaaaaaaa-0000-0000-0000-000000000002"/>
+        </insert>
+        <insert tableName="role_permission">
+            <column name="role_id" value="11111111-1111-1111-1111-111111111111"/>
+            <column name="permission_id" value="aaaaaaaa-0000-0000-0000-000000000003"/>
+        </insert>
+        <insert tableName="role_permission">
+            <column name="role_id" value="11111111-1111-1111-1111-111111111111"/>
+            <column name="permission_id" value="aaaaaaaa-0000-0000-0000-000000000004"/>
+        </insert>
+        <insert tableName="role_permission">
+            <column name="role_id" value="11111111-1111-1111-1111-111111111111"/>
+            <column name="permission_id" value="aaaaaaaa-0000-0000-0000-000000000005"/>
+        </insert>
+        <insert tableName="role_permission">
+            <column name="role_id" value="11111111-1111-1111-1111-111111111111"/>
+            <column name="permission_id" value="aaaaaaaa-0000-0000-0000-000000000006"/>
+        </insert>
+        <insert tableName="role_permission">
+            <column name="role_id" value="11111111-1111-1111-1111-111111111111"/>
+            <column name="permission_id" value="aaaaaaaa-0000-0000-0000-000000000007"/>
+        </insert>
+        <insert tableName="role_permission">
+            <column name="role_id" value="11111111-1111-1111-1111-111111111111"/>
+            <column name="permission_id" value="aaaaaaaa-0000-0000-0000-000000000008"/>
+        </insert>
+        <insert tableName="role_permission">
+            <column name="role_id" value="11111111-1111-1111-1111-111111111111"/>
+            <column name="permission_id" value="aaaaaaaa-0000-0000-0000-000000000009"/>
+        </insert>
+        <insert tableName="role_permission">
+            <column name="role_id" value="22222222-2222-2222-2222-222222222222"/>
+            <column name="permission_id" value="aaaaaaaa-0000-0000-0000-000000000002"/>
+        </insert>
+        <insert tableName="role_permission">
+            <column name="role_id" value="22222222-2222-2222-2222-222222222222"/>
+            <column name="permission_id" value="aaaaaaaa-0000-0000-0000-000000000003"/>
+        </insert>
+        <insert tableName="role_permission">
+            <column name="role_id" value="22222222-2222-2222-2222-222222222222"/>
+            <column name="permission_id" value="aaaaaaaa-0000-0000-0000-000000000004"/>
+        </insert>
+        <insert tableName="role_permission">
+            <column name="role_id" value="22222222-2222-2222-2222-222222222222"/>
+            <column name="permission_id" value="aaaaaaaa-0000-0000-0000-000000000005"/>
+        </insert>
+        <insert tableName="role_permission">
+            <column name="role_id" value="22222222-2222-2222-2222-222222222222"/>
+            <column name="permission_id" value="aaaaaaaa-0000-0000-0000-000000000007"/>
+        </insert>
+        <insert tableName="role_permission">
+            <column name="role_id" value="33333333-3333-3333-3333-333333333333"/>
+            <column name="permission_id" value="aaaaaaaa-0000-0000-0000-000000000002"/>
+        </insert>
+        <insert tableName="role_permission">
+            <column name="role_id" value="33333333-3333-3333-3333-333333333333"/>
+            <column name="permission_id" value="aaaaaaaa-0000-0000-0000-000000000007"/>
+        </insert>
+    </changeSet>
+
+    <changeSet id="004-insert-dev-users" author="codex">
+        <insert tableName="user_account">
+            <column name="id" value="10000000-0000-0000-0000-000000000001"/>
+            <column name="email" value="admin@megabike.local"/>
+            <column name="password_hash" value="$2a$10$ROYlwph0mSbeF2b6kUbnPe5q9OCXMBS1C4bkTnmljCtlJ1uVItjI6"/>
+            <column name="display_name" value="Mega Bike Admin"/>
+            <column name="enabled" valueBoolean="true"/>
+            <column name="created_at" valueDate="2026-01-01T00:00:00Z"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="user_account">
+            <column name="id" value="10000000-0000-0000-0000-000000000002"/>
+            <column name="email" value="manager@megabike.local"/>
+            <column name="password_hash" value="$2a$10$ROYlwph0mSbeF2b6kUbnPe5q9OCXMBS1C4bkTnmljCtlJ1uVItjI6"/>
+            <column name="display_name" value="Mega Bike Manager"/>
+            <column name="enabled" valueBoolean="true"/>
+            <column name="created_at" valueDate="2026-01-01T00:00:00Z"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="user_account">
+            <column name="id" value="10000000-0000-0000-0000-000000000003"/>
+            <column name="email" value="employee@megabike.local"/>
+            <column name="password_hash" value="$2a$10$ROYlwph0mSbeF2b6kUbnPe5q9OCXMBS1C4bkTnmljCtlJ1uVItjI6"/>
+            <column name="display_name" value="Mega Bike Employee"/>
+            <column name="enabled" valueBoolean="true"/>
+            <column name="created_at" valueDate="2026-01-01T00:00:00Z"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+    </changeSet>
+
+    <changeSet id="005-insert-dev-user-roles" author="codex">
+        <insert tableName="user_role">
+            <column name="user_account_id" value="10000000-0000-0000-0000-000000000001"/>
+            <column name="role_id" value="11111111-1111-1111-1111-111111111111"/>
+        </insert>
+        <insert tableName="user_role">
+            <column name="user_account_id" value="10000000-0000-0000-0000-000000000002"/>
+            <column name="role_id" value="22222222-2222-2222-2222-222222222222"/>
+        </insert>
+        <insert tableName="user_role">
+            <column name="user_account_id" value="10000000-0000-0000-0000-000000000003"/>
+            <column name="role_id" value="33333333-3333-3333-3333-333333333333"/>
+        </insert>
+    </changeSet>
+</databaseChangeLog>

@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="001-create-user-account" author="codex">
+        <createTable tableName="user_account">
+            <column name="id" type="uuid">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_user_account"/>
+            </column>
+            <column name="email" type="varchar(320)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uk_user_account_email"/>
+            </column>
+            <column name="password_hash" type="varchar(100)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="display_name" type="varchar(200)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="enabled" type="boolean" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp with time zone">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="timestamp with time zone"/>
+            <column name="created_by" type="uuid"/>
+            <column name="updated_by" type="uuid"/>
+            <column name="version" type="bigint" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="002-create-role" author="codex">
+        <createTable tableName="role">
+            <column name="id" type="uuid">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_role"/>
+            </column>
+            <column name="name" type="varchar(100)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uk_role_name"/>
+            </column>
+            <column name="created_at" type="timestamp with time zone">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="timestamp with time zone"/>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="003-create-permission" author="codex">
+        <createTable tableName="permission">
+            <column name="id" type="uuid">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_permission"/>
+            </column>
+            <column name="name" type="varchar(120)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uk_permission_name"/>
+            </column>
+            <column name="created_at" type="timestamp with time zone">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="timestamp with time zone"/>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="004-create-user-role" author="codex">
+        <createTable tableName="user_role">
+            <column name="user_account_id" type="uuid">
+                <constraints nullable="false"/>
+            </column>
+            <column name="role_id" type="uuid">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey tableName="user_role"
+                       columnNames="user_account_id, role_id"
+                       constraintName="pk_user_role"/>
+        <addForeignKeyConstraint baseTableName="user_role"
+                                 baseColumnNames="user_account_id"
+                                 constraintName="fk_user_role_user_account"
+                                 referencedTableName="user_account"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <addForeignKeyConstraint baseTableName="user_role"
+                                 baseColumnNames="role_id"
+                                 constraintName="fk_user_role_role"
+                                 referencedTableName="role"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+    </changeSet>
+
+    <changeSet id="005-create-role-permission" author="codex">
+        <createTable tableName="role_permission">
+            <column name="role_id" type="uuid">
+                <constraints nullable="false"/>
+            </column>
+            <column name="permission_id" type="uuid">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addPrimaryKey tableName="role_permission"
+                       columnNames="role_id, permission_id"
+                       constraintName="pk_role_permission"/>
+        <addForeignKeyConstraint baseTableName="role_permission"
+                                 baseColumnNames="role_id"
+                                 constraintName="fk_role_permission_role"
+                                 referencedTableName="role"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <addForeignKeyConstraint baseTableName="role_permission"
+                                 baseColumnNames="permission_id"
+                                 constraintName="fk_role_permission_permission"
+                                 referencedTableName="permission"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+    </changeSet>
+
+    <changeSet id="006-create-refresh-token" author="codex">
+        <createTable tableName="refresh_token">
+            <column name="id" type="uuid">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_refresh_token"/>
+            </column>
+            <column name="user_account_id" type="uuid">
+                <constraints nullable="false"/>
+            </column>
+            <column name="token_hash" type="varchar(128)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uk_refresh_token_token_hash"/>
+            </column>
+            <column name="expires_at" type="timestamp with time zone">
+                <constraints nullable="false"/>
+            </column>
+            <column name="revoked_at" type="timestamp with time zone"/>
+            <column name="created_at" type="timestamp with time zone">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="refresh_token"
+                                 baseColumnNames="user_account_id"
+                                 constraintName="fk_refresh_token_user_account"
+                                 referencedTableName="user_account"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <createIndex tableName="refresh_token" indexName="ix_refresh_token_user_account_id">
+            <column name="user_account_id"/>
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>

@@ -1,0 +1,49 @@
+<mxfile host="app.diagrams.net" agent="Codex">
+  <diagram id="security-database-schema" name="Security Database Schema">
+    <mxGraphModel dx="1629" dy="887" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1000" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=24;fontStyle=1" value="Mega Bike Security Database Schema" vertex="1">
+          <mxGeometry height="40" width="520" x="460" y="30" as="geometry" />
+        </mxCell>
+        <mxCell id="user_account" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f1ff;strokeColor=#4f81bd;fontSize=13;align=center;verticalAlign=top;spacing=10;" value="&lt;b&gt;user_account&lt;/b&gt;&lt;hr&gt;&lt;div align=&quot;left&quot;&gt;PK id uuid&lt;br&gt;email varchar(320) UNIQUE&lt;br&gt;password_hash varchar(100)&lt;br&gt;display_name varchar(200)&lt;br&gt;enabled boolean&lt;br&gt;created_at timestamptz&lt;br&gt;updated_at timestamptz&lt;br&gt;created_by uuid&lt;br&gt;updated_by uuid&lt;br&gt;version bigint&lt;/div&gt;" vertex="1">
+          <mxGeometry height="260" width="280" x="90" y="180" as="geometry" />
+        </mxCell>
+        <mxCell id="role" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#edf7ed;strokeColor=#5a9c5a;fontSize=13;align=center;verticalAlign=top;spacing=10;" value="&lt;b&gt;role&lt;/b&gt;&lt;hr&gt;&lt;div align=&quot;left&quot;&gt;PK id uuid&lt;br&gt;name varchar(100) UNIQUE&lt;br&gt;created_at timestamptz&lt;br&gt;updated_at timestamptz&lt;/div&gt;" vertex="1">
+          <mxGeometry height="150" width="260" x="580" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="permission" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff4df;strokeColor=#d79b00;fontSize=13;align=center;verticalAlign=top;spacing=10;" value="&lt;b&gt;permission&lt;/b&gt;&lt;hr&gt;&lt;div align=&quot;left&quot;&gt;PK id uuid&lt;br&gt;name varchar(120) UNIQUE&lt;br&gt;created_at timestamptz&lt;br&gt;updated_at timestamptz&lt;/div&gt;" vertex="1">
+          <mxGeometry height="150" width="280" x="1080" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="user_role" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f4f7fb;strokeColor=#6c8ebf;fontSize=13;align=center;verticalAlign=top;spacing=10;" value="&lt;b&gt;user_role&lt;/b&gt;&lt;hr&gt;&lt;div align=&quot;left&quot;&gt;PK, FK user_account_id uuid&lt;br&gt;PK, FK role_id uuid&lt;/div&gt;" vertex="1">
+          <mxGeometry height="115" width="270" x="575" y="410" as="geometry" />
+        </mxCell>
+        <mxCell id="role_permission" parent="1" style="round≤ed=1;whiteSpace=wrap;html=1;fillColor=#f4f7fb;strokeColor=#6c8ebf;fontSize=13;align=center;verticalAlign=top;spacing=10;" value="&lt;b&gt;role_permission&lt;/b&gt;&lt;hr&gt;&lt;div align=&quot;left&quot;&gt;PK, FK role_id uuid&lt;br&gt;PK, FK permission_id uuid&lt;/div&gt;" vertex="1">
+          <mxGeometry height="115" width="290" x="855" y="410" as="geometry" />
+        </mxCell>≤
+        <mxCell id="refresh_token" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fbeaea;strokeColor=#b85450;fontSize=13;align=center;verticalAlign=top;spacing=10;" value="&lt;b&gt;refresh_token&lt;/b&gt;&lt;hr&gt;&lt;div align=&quot;left&quot;&gt;PK id uuid&lt;br&gt;FK user_account_id uuid&lt;br&gt;token_hash varchar(128) UNIQUE&lt;br&gt;expires_at timestamptz&lt;br&gt;revoked_at timestamptz&lt;br&gt;created_at timestamptz&lt;/div&gt;" vertex="1">
+          <mxGeometry height="190" width="300" x="90" y="590" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_user_role_user" edge="1" parent="1" source="user_account" style="endArrow=ERmany;startArrow=ERone;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=12;strokeWidth=2;" target="user_role" value="1 user has many roles">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_user_role_role" edge="1" parent="1" source="role" style="endArrow=ERmany;startArrow=ERone;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=12;strokeWidth=2;" target="user_role" value="1 role assigned to many users">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_role_permission_role" edge="1" parent="1" source="role" style="endArrow=ERmany;startArrow=ERone;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=12;strokeWidth=2;" target="role_permission" value="1 role has many permissions">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_role_permission_permission" edge="1" parent="1" source="permission" style="endArrow=ERmany;startArrow=ERone;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=12;strokeWidth=2;" target="role_permission" value="1 permission used by many roles">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="edge_refresh_user" edge="1" parent="1" source="user_account" style="endArrow=ERmany;startArrow=ERone;html=1;rounded=0;edgeStyle=orthogonalEdgeStyle;fontSize=12;strokeWidth=2;" target="refresh_token" value="1 user has many refresh tokens">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="note" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=13;align=left;verticalAlign=middle;spacing=12;" value="Dev profile seeds ADMIN, MANAGER, EMPLOYEE roles, initial permissions, and three local users. Mock data is loaded through db.changelog-dev.xml only." vertex="1">
+          <mxGeometry height="80" width="520" x="515" y="650" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
