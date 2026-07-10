@@ -232,14 +232,12 @@ public ProductResponse createProduct(...) {
 Current implemented security policy:
 
 ```text
-/api/auth/**        public for now
+/api/auth/login     public
+/api/auth/me        authenticated
 /api/admin/**       ADMIN
 /api/internal/**    ADMIN, MANAGER, EMPLOYEE
 any other request   authenticated
 ```
-
-`/api/auth/**` is temporarily public because the auth endpoints do not exist yet.
-When `AuthController`, JWT validation, refresh, and logout are implemented, this should become more specific.
 
 Planned final auth policy:
 
@@ -274,11 +272,7 @@ Implemented. Defines:
 - password encoder
 - method security
 - `AuthenticationManager` bean for the upcoming login service
-
-Not implemented yet:
-
 - JWT filter registration
-- JWT token validation
 
 `PasswordEncoder`
 
@@ -313,16 +307,13 @@ PRODUCT_WRITE
 
 `JwtService`
 
-Implemented for access-token creation.
+Implemented for access-token creation and validation.
 
 Responsible for:
 
 - creating signed HS256 JWT access tokens
 - embedding issuer, subject, issued-at time, expiration time, and authorities
 - using `MEGABIKE_JWT_SECRET` through `megabike.security.jwt.secret`
-
-Not implemented yet:
-
 - validating access tokens on incoming requests
 - extracting user identity from incoming access tokens
 - extracting authorities from incoming access tokens
@@ -342,7 +333,7 @@ The default secret is only for local development. Production must set `MEGABIKE_
 
 `JwtAuthenticationFilter`
 
-Not implemented yet.
+Implemented.
 
 Reads:
 
@@ -353,9 +344,10 @@ Authorization: Bearer <token>
 Then:
 
 - validates the token
-- loads the user
 - creates the Spring Security authentication object
 - places it into the security context
+
+This filter is similar to an interceptor because it runs before controllers. The difference is that it is part of Spring Security's servlet filter chain, so the authenticated user is available to Spring Security route checks like `hasRole("ADMIN")` before the controller is called.
 
 `AuthService`
 
@@ -366,7 +358,7 @@ Responsible for:
 - login. Implemented.
 - refresh. Not implemented yet.
 - logout. Not implemented yet.
-- current user lookup. Not implemented yet.
+- current user lookup. Implemented.
 
 Current login behavior:
 
@@ -405,7 +397,7 @@ Step order and current status:
 7. Add `POST /api/auth/login`. Done.
 8. Add JWT access-token generation. Done.
 9. Add refresh-token persistence. Schema exists, service not started.
-10. Add `GET /api/auth/me`. Not started.
+10. Add `GET /api/auth/me`. Done.
 11. Add an initial admin-user strategy. Dev seed exists, production bootstrap not started.
 12. Add integration tests for login success, login failure, and protected endpoint access. Not started.
 
@@ -472,10 +464,12 @@ src/main/java/com/megabike/identity/domain/PermissionRepository.java
 src/main/java/com/megabike/identity/domain/RefreshTokenRepository.java
 src/main/java/com/megabike/identity/api/AuthController.java
 src/main/java/com/megabike/identity/api/AuthExceptionHandler.java
+src/main/java/com/megabike/identity/api/CurrentUserResponse.java
 src/main/java/com/megabike/identity/api/LoginRequest.java
 src/main/java/com/megabike/identity/api/LoginResponse.java
 src/main/java/com/megabike/identity/application/AuthService.java
 src/main/java/com/megabike/identity/infrastructure/JpaUserDetailsService.java
+src/main/java/com/megabike/identity/infrastructure/JwtAuthenticationFilter.java
 src/main/java/com/megabike/identity/infrastructure/JwtService.java
 src/main/java/com/megabike/identity/infrastructure/SecurityConfig.java
 ```
@@ -491,15 +485,18 @@ route rules for auth, admin, and internal APIs
 method security support through @EnableMethodSecurity
 database-backed UserDetailsService
 POST /api/auth/login endpoint
+GET /api/auth/me endpoint
 401 response for invalid login credentials
 JWT access token creation
+JWT access token validation
+bearer-token authentication filter
 explicit Spring Boot JSON starter for REST request/response bodies
 ```
 
 Next implementation step:
 
 ```text
-Create JwtAuthenticationFilter and token validation so access tokens can authenticate future requests.
+Create refresh-token support for POST /api/auth/refresh and POST /api/auth/logout.
 ```
 
-That will make the returned login token useful for calling protected endpoints.
+That will allow users to stay logged in without entering their password every time the access token expires.

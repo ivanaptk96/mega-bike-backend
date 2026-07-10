@@ -7,8 +7,9 @@ info:
 
     Current implementation status:
     - POST /api/auth/login is implemented.
+    - GET /api/auth/me is implemented.
     - JWT access tokens are created on login.
-    - Incoming bearer-token validation is not implemented yet.
+    - Incoming bearer-token validation is implemented.
     - Local Docker PostgreSQL is exposed on localhost:5433.
 servers:
   - url: http://localhost:8080
@@ -83,6 +84,33 @@ paths:
                   value:
                     code: INVALID_CREDENTIALS
                     message: Invalid email or password.
+  /api/auth/me:
+    get:
+      tags:
+        - Auth
+      summary: Get current user
+      description: Returns the currently authenticated user from the bearer access token.
+      operationId: currentUser
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Current authenticated user.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurrentUserResponse'
+              examples:
+                admin:
+                  value:
+                    email: admin@megabike.local
+                    authorities:
+                      - PRODUCT_READ
+                      - PRODUCT_WRITE
+                      - ROLE_ADMIN
+                      - USER_MANAGE
+        '403':
+          description: Missing, invalid, or expired bearer token.
 components:
   securitySchemes:
     bearerAuth:
@@ -131,6 +159,24 @@ components:
         expiresAt:
           type: string
           format: date-time
+        email:
+          type: string
+          format: email
+        authorities:
+          type: array
+          items:
+            type: string
+          example:
+            - ROLE_ADMIN
+            - PRODUCT_READ
+            - PRODUCT_WRITE
+    CurrentUserResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - email
+        - authorities
+      properties:
         email:
           type: string
           format: email

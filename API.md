@@ -29,6 +29,7 @@ Implemented:
 
 ```text
 POST /api/auth/login
+GET  /api/auth/me
 ```
 
 Planned but not implemented yet:
@@ -36,7 +37,6 @@ Planned but not implemented yet:
 ```text
 POST /api/auth/refresh
 POST /api/auth/logout
-GET  /api/auth/me
 ```
 
 ## Authentication
@@ -49,7 +49,7 @@ After login, the backend returns an access token. Future authenticated requests 
 Authorization: Bearer <accessToken>
 ```
 
-Token validation for incoming requests is not implemented yet. The login endpoint can create tokens, but protected endpoints cannot use those tokens until `JwtAuthenticationFilter` is added.
+Token validation for incoming requests is implemented through `JwtAuthenticationFilter`.
 
 ## POST /api/auth/login
 
@@ -119,6 +119,44 @@ Content-Type: application/json
 }
 ```
 
+## GET /api/auth/me
+
+Returns the currently authenticated user.
+
+Route:
+
+```http
+GET /api/auth/me
+Authorization: Bearer <accessToken>
+```
+
+Successful response:
+
+```http
+200 OK
+Content-Type: application/json
+```
+
+Response body:
+
+```json
+{
+  "email": "admin@megabike.local",
+  "authorities": [
+    "PRODUCT_READ",
+    "PRODUCT_WRITE",
+    "ROLE_ADMIN",
+    "USER_MANAGE"
+  ]
+}
+```
+
+Missing or invalid token:
+
+```http
+403 Forbidden
+```
+
 ## Dev Users
 
 When the Spring `dev` profile is active, Liquibase loads mock users.
@@ -146,10 +184,9 @@ src/main/java/com/megabike/identity/infrastructure/SecurityConfig.java
 Rules:
 
 ```text
-/api/auth/**        public for now
+/api/auth/login     public
+/api/auth/me        authenticated
 /api/admin/**       ADMIN
 /api/internal/**    ADMIN, MANAGER, EMPLOYEE
 any other request   authenticated
 ```
-
-`/api/auth/**` is intentionally broad during the auth bootstrap phase. It should become more precise after refresh, logout, and current-user endpoints are implemented.

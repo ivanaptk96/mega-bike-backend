@@ -2,6 +2,7 @@ package com.megabike.identity.application;
 
 import com.megabike.identity.api.LoginRequest;
 import com.megabike.identity.api.LoginResponse;
+import com.megabike.identity.api.CurrentUserResponse;
 import com.megabike.identity.infrastructure.JwtService;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -26,6 +27,11 @@ public class AuthService {
 	}
 
 	public LoginResponse login(LoginRequest request) {
+		/*
+		 * AuthenticationManager is Spring Security's login coordinator.
+		 * It calls our JpaUserDetailsService to load the user and uses the configured
+		 * PasswordEncoder to compare the raw password with the BCrypt password hash.
+		 */
 		Authentication authentication = authenticationManager.authenticate(
 				UsernamePasswordAuthenticationToken.unauthenticated(request.email(), request.password())
 		);
@@ -40,6 +46,16 @@ public class AuthService {
 				token.expiresAt(),
 				userDetails.getUsername(),
 				authorities(userDetails)
+		);
+	}
+
+	public CurrentUserResponse currentUser(Authentication authentication) {
+		return new CurrentUserResponse(
+				authentication.getName(),
+				authentication.getAuthorities().stream()
+						.map(GrantedAuthority::getAuthority)
+						.sorted()
+						.toList()
 		);
 	}
 

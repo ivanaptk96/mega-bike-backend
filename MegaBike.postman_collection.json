@@ -225,6 +225,59 @@
             "description": "Verifies that invalid credentials return 401."
           },
           "response": []
+        },
+        {
+          "name": "Current User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Current user returned\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "",
+                  "pm.test(\"Email matches authenticated user\", function () {",
+                  "    pm.expect(response.email).to.eql(pm.collectionVariables.get(\"authenticatedEmail\"));",
+                  "});",
+                  "",
+                  "pm.test(\"Authorities are present\", function () {",
+                  "    pm.expect(response.authorities).to.be.an(\"array\").and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ]
+            },
+            "description": "Returns the currently authenticated user from the stored bearer token. Run one of the successful login requests first."
+          },
+          "response": []
         }
       ]
     }
