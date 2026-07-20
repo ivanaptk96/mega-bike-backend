@@ -18,15 +18,26 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
 	@Bean
-	SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationFilter jwtAuthenticationFilter) throws Exception {
+	SecurityFilterChain securityFilterChain(
+			HttpSecurity http,
+			JwtAuthenticationFilter jwtAuthenticationFilter,
+			JsonAuthenticationEntryPoint authenticationEntryPoint,
+			JsonAccessDeniedHandler accessDeniedHandler
+	) throws Exception {
 		return http
 				.csrf(AbstractHttpConfigurer::disable)
 				.formLogin(AbstractHttpConfigurer::disable)
 				.httpBasic(AbstractHttpConfigurer::disable)
 				.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+				.exceptionHandling(exceptions -> exceptions
+						.authenticationEntryPoint(authenticationEntryPoint)
+						.accessDeniedHandler(accessDeniedHandler)
+				)
 				.authorizeHttpRequests(authorize -> authorize
 						.requestMatchers("/api/auth/login").permitAll()
+						.requestMatchers("/api/auth/refresh").permitAll()
 						.requestMatchers("/api/auth/me").authenticated()
+						.requestMatchers("/api/auth/logout").authenticated()
 						.requestMatchers("/api/admin/**").hasRole("ADMIN")
 						.requestMatchers("/api/internal/**").hasAnyRole("ADMIN", "MANAGER", "EMPLOYEE")
 						.anyRequest().authenticated()

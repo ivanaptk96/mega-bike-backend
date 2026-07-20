@@ -29,14 +29,9 @@ Implemented:
 
 ```text
 POST /api/auth/login
-GET  /api/auth/me
-```
-
-Planned but not implemented yet:
-
-```text
 POST /api/auth/refresh
 POST /api/auth/logout
+GET  /api/auth/me
 ```
 
 ## Authentication
@@ -50,6 +45,33 @@ Authorization: Bearer <accessToken>
 ```
 
 Token validation for incoming requests is implemented through `JwtAuthenticationFilter`.
+
+The backend also returns an opaque refresh token. Store it separately from the access token. It is used to request a new access token when the short-lived access token expires.
+
+## Error Response
+
+API errors use a shared response shape:
+
+```json
+{
+  "code": "VALIDATION_FAILED",
+  "message": "Request validation failed.",
+  "details": {
+    "email": "must be a well-formed email address"
+  },
+  "timestamp": "2026-07-13T08:45:00Z"
+}
+```
+
+Common codes:
+
+```text
+VALIDATION_FAILED
+MALFORMED_JSON
+INVALID_CREDENTIALS
+AUTHENTICATION_REQUIRED
+ACCESS_DENIED
+```
 
 ## POST /api/auth/login
 
@@ -83,9 +105,11 @@ Response body:
 ```json
 {
   "accessToken": "<jwt>",
+  "refreshToken": "<opaque-refresh-token>",
   "tokenType": "Bearer",
   "expiresInSeconds": 900,
   "expiresAt": "2026-07-10T10:00:00Z",
+  "refreshTokenExpiresAt": "2026-07-17T10:00:00Z",
   "email": "admin@megabike.local",
   "authorities": [
     "PRODUCT_READ",
@@ -93,6 +117,78 @@ Response body:
     "ROLE_ADMIN",
     "USER_MANAGE"
   ]
+}
+```
+
+## POST /api/auth/refresh
+
+Issues a new access token from a valid refresh token.
+
+Route:
+
+```http
+POST /api/auth/refresh
+Content-Type: application/json
+```
+
+Request body:
+
+```json
+{
+  "refreshToken": "<opaque-refresh-token>"
+}
+```
+
+Successful response:
+
+```json
+{
+  "accessToken": "<jwt>",
+  "tokenType": "Bearer",
+  "expiresInSeconds": 900,
+  "expiresAt": "2026-07-10T10:15:00Z"
+}
+```
+
+Invalid, revoked, or expired refresh token:
+
+```http
+401 Unauthorized
+```
+
+## POST /api/auth/logout
+
+Revokes a refresh token.
+
+Route:
+
+```http
+POST /api/auth/logout
+Authorization: Bearer <accessToken>
+Content-Type: application/json
+```
+
+Request body:
+
+```json
+{
+  "refreshToken": "<opaque-refresh-token>"
+}
+```
+
+Successful response:
+
+```json
+{
+  "revoked": true
+}
+```
+
+If the token was already missing or unknown:
+
+```json
+{
+  "revoked": false
 }
 ```
 
@@ -115,7 +211,9 @@ Content-Type: application/json
 ```json
 {
   "code": "INVALID_CREDENTIALS",
-  "message": "Invalid email or password."
+  "message": "Invalid credentials.",
+  "details": {},
+  "timestamp": "2026-07-13T08:45:00Z"
 }
 ```
 
@@ -154,7 +252,17 @@ Response body:
 Missing or invalid token:
 
 ```http
-403 Forbidden
+401 Unauthorized
+Content-Type: application/json
+```
+
+```json
+{
+  "code": "AUTHENTICATION_REQUIRED",
+  "message": "Authentication is required.",
+  "details": {},
+  "timestamp": "2026-07-13T08:45:00Z"
+}
 ```
 
 ## Dev Users
@@ -185,7 +293,9 @@ Rules:
 
 ```text
 /api/auth/login     public
+/api/auth/refresh   public
 /api/auth/me        authenticated
+/api/auth/logout    authenticated
 /api/admin/**       ADMIN
 /api/internal/**    ADMIN, MANAGER, EMPLOYEE
 any other request   authenticated

@@ -7,6 +7,8 @@ info:
 
     Current implementation status:
     - POST /api/auth/login is implemented.
+    - POST /api/auth/refresh is implemented.
+    - POST /api/auth/logout is implemented.
     - GET /api/auth/me is implemented.
     - JWT access tokens are created on login.
     - Incoming bearer-token validation is implemented.
@@ -58,9 +60,11 @@ paths:
                 success:
                   value:
                     accessToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.example.signature
+                    refreshToken: VcJKgk9jY7wFMV6zvJ4p5W7t8wz7qH0m4CO3LQ
                     tokenType: Bearer
                     expiresInSeconds: 900
                     expiresAt: '2026-07-10T10:00:00Z'
+                    refreshTokenExpiresAt: '2026-07-17T10:00:00Z'
                     email: admin@megabike.local
                     authorities:
                       - PRODUCT_READ
@@ -83,7 +87,69 @@ paths:
                 invalidCredentials:
                   value:
                     code: INVALID_CREDENTIALS
-                    message: Invalid email or password.
+                    message: Invalid credentials.
+  /api/auth/refresh:
+    post:
+      tags:
+        - Auth
+      summary: Refresh access token
+      description: Issues a new access token from a valid, unexpired, non-revoked refresh token.
+      operationId: refreshToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '200':
+          description: New access token issued.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '400':
+          description: Request body validation failed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Invalid, expired, or revoked refresh token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/auth/logout:
+    post:
+      tags:
+        - Auth
+      summary: Log out
+      description: Revokes a refresh token. Requires a valid bearer access token.
+      operationId: logout
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogoutRequest'
+      responses:
+        '200':
+          description: Logout processed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogoutResponse'
+        '400':
+          description: Request body validation failed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Missing, invalid, or expired bearer token.
   /api/auth/me:
     get:
       tags:
@@ -139,15 +205,20 @@ components:
       additionalProperties: false
       required:
         - accessToken
+        - refreshToken
         - tokenType
         - expiresInSeconds
         - expiresAt
+        - refreshTokenExpiresAt
         - email
         - authorities
       properties:
         accessToken:
           type: string
           description: Signed JWT access token.
+        refreshToken:
+          type: string
+          description: Opaque refresh token. Store securely; the database stores only its SHA-256 hash.
         tokenType:
           type: string
           enum:
@@ -157,6 +228,9 @@ components:
           format: int64
           example: 900
         expiresAt:
+          type: string
+          format: date-time
+        refreshTokenExpiresAt:
           type: string
           format: date-time
         email:
@@ -170,6 +244,52 @@ components:
             - ROLE_ADMIN
             - PRODUCT_READ
             - PRODUCT_WRITE
+    RefreshTokenRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - refreshToken
+      properties:
+        refreshToken:
+          type: string
+    LogoutRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - refreshToken
+      properties:
+        refreshToken:
+          type: string
+    TokenResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - accessToken
+        - tokenType
+        - expiresInSeconds
+        - expiresAt
+      properties:
+        accessToken:
+          type: string
+        tokenType:
+          type: string
+          enum:
+            - Bearer
+        expiresInSeconds:
+          type: integer
+          format: int64
+          example: 900
+        expiresAt:
+          type: string
+          format: date-time
+    LogoutResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - revoked
+      properties:
+        revoked:
+          type: boolean
     CurrentUserResponse:
       type: object
       additionalProperties: false
@@ -194,10 +314,21 @@ components:
       required:
         - code
         - message
+        - details
+        - timestamp
       properties:
         code:
           type: string
           example: INVALID_CREDENTIALS
         message:
           type: string
-          example: Invalid email or password.
+          example: Invalid credentials.
+        details:
+          type: object
+          additionalProperties:
+            type: string
+          example:
+            email: must be a well-formed email address
+        timestamp:
+          type: string
+          format: date-time

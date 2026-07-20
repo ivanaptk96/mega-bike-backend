@@ -233,7 +233,9 @@ Current implemented security policy:
 
 ```text
 /api/auth/login     public
+/api/auth/refresh   public
 /api/auth/me        authenticated
+/api/auth/logout    authenticated
 /api/admin/**       ADMIN
 /api/internal/**    ADMIN, MANAGER, EMPLOYEE
 any other request   authenticated
@@ -327,6 +329,7 @@ megabike:
       issuer: mega-bike-backend
       secret: ${MEGABIKE_JWT_SECRET:local-development-secret-change-before-production}
       access-token-ttl-seconds: 900
+    refresh-token-ttl-seconds: 604800
 ```
 
 The default secret is only for local development. Production must set `MEGABIKE_JWT_SECRET`.
@@ -356,8 +359,8 @@ Partially implemented.
 Responsible for:
 
 - login. Implemented.
-- refresh. Not implemented yet.
-- logout. Not implemented yet.
+- refresh. Implemented.
+- logout. Implemented.
 - current user lookup. Implemented.
 
 Current login behavior:
@@ -396,7 +399,7 @@ Step order and current status:
 6. Add BCrypt password handling. Done.
 7. Add `POST /api/auth/login`. Done.
 8. Add JWT access-token generation. Done.
-9. Add refresh-token persistence. Schema exists, service not started.
+9. Add refresh-token persistence. Done.
 10. Add `GET /api/auth/me`. Done.
 11. Add an initial admin-user strategy. Dev seed exists, production bootstrap not started.
 12. Add integration tests for login success, login failure, and protected endpoint access. Not started.
@@ -434,17 +437,18 @@ Minimum tests:
 ```text
 POST /api/auth/login returns access token for valid credentials
 POST /api/auth/login rejects invalid password
+POST /api/auth/login rejects invalid request body
 GET /api/auth/me rejects missing token
 GET /api/auth/me returns current user with valid token
 /api/admin/** rejects non-admin users
+POST /api/auth/refresh returns a new access token
+POST /api/auth/logout revokes refresh token
 ```
 
 Later tests:
 
 ```text
 expired access token is rejected
-refresh token can issue a new access token
-revoked refresh token is rejected
 disabled user cannot log in
 permission-protected endpoint rejects missing permission
 ```
@@ -463,15 +467,25 @@ src/main/java/com/megabike/identity/domain/RoleRepository.java
 src/main/java/com/megabike/identity/domain/PermissionRepository.java
 src/main/java/com/megabike/identity/domain/RefreshTokenRepository.java
 src/main/java/com/megabike/identity/api/AuthController.java
-src/main/java/com/megabike/identity/api/AuthExceptionHandler.java
 src/main/java/com/megabike/identity/api/CurrentUserResponse.java
+src/main/java/com/megabike/identity/api/LogoutRequest.java
+src/main/java/com/megabike/identity/api/LogoutResponse.java
 src/main/java/com/megabike/identity/api/LoginRequest.java
 src/main/java/com/megabike/identity/api/LoginResponse.java
+src/main/java/com/megabike/identity/api/RefreshTokenRequest.java
+src/main/java/com/megabike/identity/api/TokenResponse.java
 src/main/java/com/megabike/identity/application/AuthService.java
+src/main/java/com/megabike/identity/application/RefreshTokenService.java
 src/main/java/com/megabike/identity/infrastructure/JpaUserDetailsService.java
 src/main/java/com/megabike/identity/infrastructure/JwtAuthenticationFilter.java
 src/main/java/com/megabike/identity/infrastructure/JwtService.java
+src/main/java/com/megabike/identity/infrastructure/JsonAccessDeniedHandler.java
+src/main/java/com/megabike/identity/infrastructure/JsonAuthenticationEntryPoint.java
 src/main/java/com/megabike/identity/infrastructure/SecurityConfig.java
+src/main/java/com/megabike/shared/api/ErrorResponse.java
+src/main/java/com/megabike/shared/api/GlobalExceptionHandler.java
+src/main/java/com/megabike/shared/api/JacksonConfig.java
+src/test/java/com/megabike/identity/api/AuthIntegrationTests.java
 ```
 
 Implemented infrastructure:
@@ -486,17 +500,24 @@ method security support through @EnableMethodSecurity
 database-backed UserDetailsService
 POST /api/auth/login endpoint
 GET /api/auth/me endpoint
-401 response for invalid login credentials
+POST /api/auth/refresh endpoint
+POST /api/auth/logout endpoint
+shared API error response
+consistent 400 validation errors
+consistent 401 authentication errors
+consistent 403 access-denied errors
+auth integration tests backed by PostgreSQL Testcontainers
 JWT access token creation
 JWT access token validation
 bearer-token authentication filter
+opaque refresh-token creation, hashing, lookup, and revocation
 explicit Spring Boot JSON starter for REST request/response bodies
 ```
 
 Next implementation step:
 
 ```text
-Create refresh-token support for POST /api/auth/refresh and POST /api/auth/logout.
+Add focused integration tests around login, refresh, logout, and protected endpoint access.
 ```
 
-That will allow users to stay logged in without entering their password every time the access token expires.
+That will lock in the behavior before moving into product/catalog endpoints.

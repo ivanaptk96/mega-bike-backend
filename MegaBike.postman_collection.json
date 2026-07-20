@@ -23,6 +23,7 @@
                   "",
                   "const response = pm.response.json();",
                   "pm.collectionVariables.set(\"accessToken\", response.accessToken);",
+                  "pm.collectionVariables.set(\"refreshToken\", response.refreshToken);",
                   "pm.collectionVariables.set(\"tokenType\", response.tokenType);",
                   "pm.collectionVariables.set(\"authenticatedEmail\", response.email);",
                   "",
@@ -65,7 +66,7 @@
                 "login"
               ]
             },
-            "description": "Authenticates the dev admin user and stores accessToken, tokenType, and authenticatedEmail as collection variables."
+            "description": "Authenticates the dev admin user and stores accessToken, refreshToken, tokenType, and authenticatedEmail as collection variables."
           },
           "response": []
         },
@@ -83,6 +84,7 @@
                   "",
                   "const response = pm.response.json();",
                   "pm.collectionVariables.set(\"accessToken\", response.accessToken);",
+                  "pm.collectionVariables.set(\"refreshToken\", response.refreshToken);",
                   "pm.collectionVariables.set(\"tokenType\", response.tokenType);",
                   "pm.collectionVariables.set(\"authenticatedEmail\", response.email);"
                 ]
@@ -135,6 +137,7 @@
                   "",
                   "const response = pm.response.json();",
                   "pm.collectionVariables.set(\"accessToken\", response.accessToken);",
+                  "pm.collectionVariables.set(\"refreshToken\", response.refreshToken);",
                   "pm.collectionVariables.set(\"tokenType\", response.tokenType);",
                   "pm.collectionVariables.set(\"authenticatedEmail\", response.email);"
                 ]
@@ -278,6 +281,123 @@
             "description": "Returns the currently authenticated user from the stored bearer token. Run one of the successful login requests first."
           },
           "response": []
+        },
+        {
+          "name": "Refresh Access Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Refresh succeeded\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "pm.collectionVariables.set(\"accessToken\", response.accessToken);",
+                  "",
+                  "pm.test(\"New access token is present\", function () {",
+                  "    pm.expect(response.accessToken).to.be.a(\"string\").and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/refresh",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "refresh"
+              ]
+            },
+            "description": "Issues a new access token from the stored refreshToken. Run one of the successful login requests first."
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Logout processed\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "",
+                  "pm.test(\"Revoked flag is present\", function () {",
+                  "    pm.expect(response.revoked).to.be.a(\"boolean\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "logout"
+              ]
+            },
+            "description": "Revokes the stored refreshToken. Run a successful login request first."
+          },
+          "response": []
         }
       ]
     }
@@ -290,6 +410,11 @@
     },
     {
       "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refreshToken",
       "value": "",
       "type": "string"
     },

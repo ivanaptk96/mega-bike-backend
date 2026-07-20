@@ -1,5 +1,6 @@
 package com.megabike;
 
+import com.megabike.identity.domain.RefreshTokenRepository;
 import com.megabike.identity.domain.UserAccountRepository;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -24,6 +25,11 @@ class MegaBikeBackendApplicationTests {
 		@Bean
 		UserAccountRepository userAccountRepository() {
 			return Mockito.mock(UserAccountRepository.class);
+		}
+
+		@Bean
+		RefreshTokenRepository refreshTokenRepository() {
+			return Mockito.mock(RefreshTokenRepository.class);
 		}
 	}
 
