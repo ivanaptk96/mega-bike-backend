@@ -23,7 +23,7 @@ Local development PostgreSQL listens on host port `5433` to avoid conflicts with
 
 ## Current Status
 
-The API is in the first identity/login slice.
+The API currently includes the identity/login slice and the first catalog category slice.
 
 Implemented:
 
@@ -32,6 +32,10 @@ POST /api/auth/login
 POST /api/auth/refresh
 POST /api/auth/logout
 GET  /api/auth/me
+POST /api/internal/categories
+GET  /api/internal/categories
+GET  /api/internal/categories/{id}
+PUT  /api/internal/categories/{id}
 ```
 
 ## Authentication
@@ -263,6 +267,114 @@ Content-Type: application/json
   "details": {},
   "timestamp": "2026-07-13T08:45:00Z"
 }
+```
+
+## Categories
+
+Category endpoints are protected internal endpoints.
+
+Required authorities:
+
+```text
+PRODUCT_READ   list/read categories
+PRODUCT_WRITE  create/update categories
+```
+
+### POST /api/internal/categories
+
+Creates a category.
+
+Route:
+
+```http
+POST /api/internal/categories
+Authorization: Bearer <accessToken>
+Content-Type: application/json
+```
+
+Request body:
+
+```json
+{
+  "name": "Helmets",
+  "slug": "helmets",
+  "parentId": null,
+  "active": true
+}
+```
+
+`slug` is optional. If omitted, it is generated from `name`.
+
+Successful response:
+
+```json
+{
+  "id": "2ef0b6d6-1d5b-4f7c-9ef7-6ad60cbf50f2",
+  "name": "Helmets",
+  "slug": "helmets",
+  "parentId": null,
+  "parentName": null,
+  "active": true,
+  "createdAt": "2026-07-20T17:00:00Z",
+  "updatedAt": null
+}
+```
+
+### GET /api/internal/categories
+
+Lists categories ordered by name.
+
+Route:
+
+```http
+GET /api/internal/categories
+Authorization: Bearer <accessToken>
+```
+
+### GET /api/internal/categories/{id}
+
+Returns one category.
+
+Route:
+
+```http
+GET /api/internal/categories/{id}
+Authorization: Bearer <accessToken>
+```
+
+Missing category:
+
+```text
+404 CATEGORY_NOT_FOUND
+```
+
+### PUT /api/internal/categories/{id}
+
+Updates a category.
+
+Route:
+
+```http
+PUT /api/internal/categories/{id}
+Authorization: Bearer <accessToken>
+Content-Type: application/json
+```
+
+Request body:
+
+```json
+{
+  "name": "Bike Helmets",
+  "slug": "bike-helmets",
+  "parentId": null,
+  "active": true
+}
+```
+
+Duplicate slug:
+
+```text
+409 CATEGORY_SLUG_EXISTS
 ```
 
 ## Dev Users

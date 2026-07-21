@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="001-insert-dev-categories" author="codex">
+        <insert tableName="category">
+            <column name="id" value="40000000-0000-0000-0000-000000000001"/>
+            <column name="name" value="Bikes"/>
+            <column name="slug" value="bikes"/>
+            <column name="active" valueBoolean="true"/>
+            <column name="created_at" value="2026-01-01 00:00:00+00"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="category">
+            <column name="id" value="40000000-0000-0000-0000-000000000002"/>
+            <column name="name" value="Parts"/>
+            <column name="slug" value="parts"/>
+            <column name="active" valueBoolean="true"/>
+            <column name="created_at" value="2026-01-01 00:00:00+00"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="category">
+            <column name="id" value="40000000-0000-0000-0000-000000000003"/>
+            <column name="name" value="MTB"/>
+            <column name="slug" value="mtb"/>
+            <column name="parent_id" value="40000000-0000-0000-0000-000000000001"/>
+            <column name="active" valueBoolean="true"/>
+            <column name="created_at" value="2026-01-01 00:00:00+00"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="category">
+            <column name="id" value="40000000-0000-0000-0000-000000000004"/>
+            <column name="name" value="Road"/>
+            <column name="slug" value="road"/>
+            <column name="parent_id" value="40000000-0000-0000-0000-000000000001"/>
+            <column name="active" valueBoolean="true"/>
+            <column name="created_at" value="2026-01-01 00:00:00+00"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+    </changeSet>
+</databaseChangeLog>

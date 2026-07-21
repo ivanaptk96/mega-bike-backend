@@ -6,4 +6,5 @@
         https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
 
     <include file="db/changelog/identity/001-create-identity-tables.xml"/>
+    <include file="db/changelog/catalog/001-create-categories.xml"/>
 </databaseChangeLog>

@@ -10,6 +10,7 @@ info:
     - POST /api/auth/refresh is implemented.
     - POST /api/auth/logout is implemented.
     - GET /api/auth/me is implemented.
+    - Category CRUD endpoints are implemented.
     - JWT access tokens are created on login.
     - Incoming bearer-token validation is implemented.
     - Local Docker PostgreSQL is exposed on localhost:5433.
@@ -19,6 +20,8 @@ servers:
 tags:
   - name: Auth
     description: Authentication endpoints
+  - name: Catalog
+    description: Catalog endpoints
 paths:
   /api/auth/login:
     post:
@@ -175,8 +178,160 @@ paths:
                       - PRODUCT_WRITE
                       - ROLE_ADMIN
                       - USER_MANAGE
-        '403':
+        '401':
           description: Missing, invalid, or expired bearer token.
+  /api/internal/categories:
+    post:
+      tags:
+        - Catalog
+      summary: Create category
+      operationId: createCategory
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryRequest'
+      responses:
+        '200':
+          description: Category created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryResponse'
+        '400':
+          description: Request body validation failed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Missing, invalid, or expired bearer token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Missing PRODUCT_WRITE authority.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Category slug already exists.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    get:
+      tags:
+        - Catalog
+      summary: List categories
+      operationId: listCategories
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Categories ordered by name.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CategoryResponse'
+        '401':
+          description: Missing, invalid, or expired bearer token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Missing PRODUCT_READ authority.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/internal/categories/{id}:
+    get:
+      tags:
+        - Catalog
+      summary: Get category
+      operationId: getCategory
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Category.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryResponse'
+        '404':
+          description: Category was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags:
+        - Catalog
+      summary: Update category
+      operationId: updateCategory
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryRequest'
+      responses:
+        '200':
+          description: Category updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryResponse'
+        '400':
+          description: Request body validation failed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Missing PRODUCT_WRITE authority.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Category was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Category slug already exists.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 components:
   securitySchemes:
     bearerAuth:
@@ -308,6 +463,64 @@ components:
             - ROLE_ADMIN
             - PRODUCT_READ
             - PRODUCT_WRITE
+    CategoryRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - name
+        - active
+      properties:
+        name:
+          type: string
+          maxLength: 200
+          example: Helmets
+        slug:
+          type: string
+          maxLength: 220
+          nullable: true
+          example: helmets
+        parentId:
+          type: string
+          format: uuid
+          nullable: true
+        active:
+          type: boolean
+          example: true
+    CategoryResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - name
+        - slug
+        - active
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: Helmets
+        slug:
+          type: string
+          example: helmets
+        parentId:
+          type: string
+          format: uuid
+          nullable: true
+        parentName:
+          type: string
+          nullable: true
+        active:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
     ErrorResponse:
       type: object
       additionalProperties: false

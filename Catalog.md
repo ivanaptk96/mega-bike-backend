@@ -481,6 +481,12 @@ category DTOs
 category integration tests
 ```
 
+Current status:
+
+```text
+Implemented.
+```
+
 Endpoints:
 
 ```text
@@ -488,6 +494,13 @@ POST /api/internal/categories
 GET  /api/internal/categories
 GET  /api/internal/categories/{id}
 PUT  /api/internal/categories/{id}
+```
+
+Implemented authorization:
+
+```text
+PRODUCT_READ   can list/read categories
+PRODUCT_WRITE  can create/update categories
 ```
 
 ### Step 2 - Product Foundation

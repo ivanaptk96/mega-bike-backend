@@ -1,6 +1,7 @@
 package com.megabike.shared.api;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
@@ -14,6 +15,13 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+	@ExceptionHandler(ApiException.class)
+	public ResponseEntity<ErrorResponse> handleApiException(ApiException exception) {
+		return ResponseEntity
+				.status(exception.getStatus())
+				.body(ErrorResponse.of(exception.getCode(), exception.getMessage()));
+	}
 
 	@ExceptionHandler(MethodArgumentNotValidException.class)
 	@ResponseStatus(HttpStatus.BAD_REQUEST)

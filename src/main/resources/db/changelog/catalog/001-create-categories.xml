@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="001-create-category" author="codex">
+        <createTable tableName="category">
+            <column name="id" type="uuid">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_category"/>
+            </column>
+            <column name="name" type="varchar(200)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="slug" type="varchar(220)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uk_category_slug"/>
+            </column>
+            <column name="parent_id" type="uuid"/>
+            <column name="active" type="boolean" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp with time zone">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="timestamp with time zone"/>
+            <column name="version" type="bigint" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="category"
+                                 baseColumnNames="parent_id"
+                                 constraintName="fk_category_parent"
+                                 referencedTableName="category"
+                                 referencedColumnNames="id"
+                                 onDelete="RESTRICT"/>
+
+        <createIndex tableName="category" indexName="ix_category_parent_id">
+            <column name="parent_id"/>
+        </createIndex>
+        <createIndex tableName="category" indexName="ix_category_active">
+            <column name="active"/>
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>

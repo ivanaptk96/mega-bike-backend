@@ -400,6 +400,228 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "Catalog",
+      "item": [
+        {
+          "name": "Create Category",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Category created\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "pm.collectionVariables.set(\"categoryId\", response.id);",
+                  "pm.collectionVariables.set(\"categorySlug\", response.slug);",
+                  "",
+                  "pm.test(\"Category id is present\", function () {",
+                  "    pm.expect(response.id).to.be.a(\"string\").and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Helmets\",\n  \"slug\": \"helmets-{{$timestamp}}\",\n  \"parentId\": null,\n  \"active\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/internal/categories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "internal",
+                "categories"
+              ]
+            },
+            "description": "Creates a category. Run Login - Admin or Login - Manager first."
+          },
+          "response": []
+        },
+        {
+          "name": "List Categories",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Categories returned\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Response is an array\", function () {",
+                  "    pm.expect(pm.response.json()).to.be.an(\"array\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/internal/categories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "internal",
+                "categories"
+              ]
+            },
+            "description": "Lists categories. Any dev user can run this after login."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Category",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Category returned\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/internal/categories/{{categoryId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "internal",
+                "categories",
+                "{{categoryId}}"
+              ]
+            },
+            "description": "Gets the category stored by Create Category."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Category",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Category updated\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const response = pm.response.json();",
+                  "pm.test(\"Category is inactive\", function () {",
+                  "    pm.expect(response.active).to.eql(false);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Bike Helmets\",\n  \"slug\": \"{{categorySlug}}\",\n  \"parentId\": null,\n  \"active\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/internal/categories/{{categoryId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "internal",
+                "categories",
+                "{{categoryId}}"
+              ]
+            },
+            "description": "Updates the category stored by Create Category. Requires PRODUCT_WRITE."
+          },
+          "response": []
+        }
+      ]
     }
   ],
   "variable": [
@@ -425,6 +647,16 @@
     },
     {
       "key": "authenticatedEmail",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "categoryId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "categorySlug",
       "value": "",
       "type": "string"
     }
