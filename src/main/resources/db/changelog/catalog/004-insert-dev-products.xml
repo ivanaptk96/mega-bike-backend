@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="001-insert-dev-products" author="codex">
+        <insert tableName="product">
+            <column name="id" value="50000000-0000-0000-0000-000000000001"/>
+            <column name="product_code" value="MB-P-0001"/>
+            <column name="external_id" value="ALG-P-0001"/>
+            <column name="barcode" value="8600000000011"/>
+            <column name="name" value="Trail Helmet M"/>
+            <column name="description" value="Dev sample helmet for catalog testing."/>
+            <column name="brand_name" value="Mega Bike"/>
+            <column name="category_id" value="40000000-0000-0000-0000-000000000001"/>
+            <column name="unit" value="PIECE"/>
+            <column name="purchase_price" valueNumeric="38.00"/>
+            <column name="retail_price" valueNumeric="59.99"/>
+            <column name="vat_rate" valueNumeric="20.00"/>
+            <column name="retail_price_includes_vat" valueBoolean="true"/>
+            <column name="active" valueBoolean="true"/>
+            <column name="created_at" value="2026-01-01 00:00:00+00"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="product">
+            <column name="id" value="50000000-0000-0000-0000-000000000002"/>
+            <column name="product_code" value="MB-P-0002"/>
+            <column name="external_id" value="ALG-P-0002"/>
+            <column name="barcode" value="8600000000028"/>
+            <column name="name" value="Road Brake Pads"/>
+            <column name="description" value="Dev sample brake pads for catalog testing."/>
+            <column name="brand_name" value="Mega Bike"/>
+            <column name="category_id" value="40000000-0000-0000-0000-000000000002"/>
+            <column name="unit" value="PIECE"/>
+            <column name="purchase_price" valueNumeric="8.50"/>
+            <column name="retail_price" valueNumeric="14.99"/>
+            <column name="vat_rate" valueNumeric="20.00"/>
+            <column name="retail_price_includes_vat" valueBoolean="true"/>
+            <column name="active" valueBoolean="true"/>
+            <column name="created_at" value="2026-01-01 00:00:00+00"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+    </changeSet>
+</databaseChangeLog>

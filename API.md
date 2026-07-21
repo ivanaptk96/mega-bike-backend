@@ -36,6 +36,10 @@ POST /api/internal/categories
 GET  /api/internal/categories
 GET  /api/internal/categories/{id}
 PUT  /api/internal/categories/{id}
+POST /api/internal/products
+GET  /api/internal/products
+GET  /api/internal/products/{id}
+PUT  /api/internal/products/{id}
 ```
 
 ## Authentication
@@ -376,6 +380,143 @@ Duplicate slug:
 ```text
 409 CATEGORY_SLUG_EXISTS
 ```
+
+## Products
+
+Product endpoints are protected internal endpoints.
+
+Required authorities:
+
+```text
+PRODUCT_READ   list/read products
+PRODUCT_WRITE  create/update products
+```
+
+### POST /api/internal/products
+
+Creates a product.
+
+Route:
+
+```http
+POST /api/internal/products
+Authorization: Bearer <accessToken>
+Content-Type: application/json
+```
+
+Request body:
+
+```json
+{
+  "productCode": "MB-P-1001",
+  "externalId": "ALG-P-1001",
+  "barcode": "8600000001001",
+  "name": "Trail Helmet M",
+  "description": "Mountain bike helmet, medium.",
+  "brandName": "Mega Bike",
+  "categoryId": "40000000-0000-0000-0000-000000000001",
+  "unit": "PIECE",
+  "purchasePrice": 38.00,
+  "retailPrice": 59.99,
+  "vatRate": 20.00,
+  "retailPriceIncludesVat": true,
+  "active": true
+}
+```
+
+Successful response:
+
+```json
+{
+  "id": "5fc85194-7bd5-47ab-9251-4ef31fbcb1ad",
+  "productCode": "MB-P-1001",
+  "externalId": "ALG-P-1001",
+  "barcode": "8600000001001",
+  "name": "Trail Helmet M",
+  "description": "Mountain bike helmet, medium.",
+  "brandName": "Mega Bike",
+  "categoryId": "40000000-0000-0000-0000-000000000001",
+  "categoryName": "Bikes",
+  "unit": "PIECE",
+  "purchasePrice": 38.00,
+  "retailPrice": 59.99,
+  "vatRate": 20.00,
+  "retailPriceIncludesVat": true,
+  "active": true,
+  "createdAt": "2026-07-21T18:00:00Z",
+  "updatedAt": null
+}
+```
+
+Duplicate code or barcode:
+
+```text
+409 PRODUCT_CODE_EXISTS
+409 PRODUCT_BARCODE_EXISTS
+```
+
+Missing category:
+
+```text
+400 PRODUCT_CATEGORY_NOT_FOUND
+```
+
+### GET /api/internal/products
+
+Lists products ordered by name.
+
+Route:
+
+```http
+GET /api/internal/products
+Authorization: Bearer <accessToken>
+```
+
+Optional query parameters:
+
+```text
+query       searches name, productCode, barcode, brandName, externalId
+categoryId filters by category UUID
+active     filters active/inactive products
+```
+
+Example:
+
+```http
+GET /api/internal/products?query=helmet&active=true
+Authorization: Bearer <accessToken>
+```
+
+### GET /api/internal/products/{id}
+
+Returns one product.
+
+Route:
+
+```http
+GET /api/internal/products/{id}
+Authorization: Bearer <accessToken>
+```
+
+Missing product:
+
+```text
+404 PRODUCT_NOT_FOUND
+```
+
+### PUT /api/internal/products/{id}
+
+Updates a product.
+
+Route:
+
+```http
+PUT /api/internal/products/{id}
+Authorization: Bearer <accessToken>
+Content-Type: application/json
+```
+
+Request body is the same shape as `POST /api/internal/products`.
 
 ## Dev Users
 

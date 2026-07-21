@@ -7,4 +7,5 @@
 
     <include file="db/changelog/identity/001-create-identity-tables.xml"/>
     <include file="db/changelog/catalog/001-create-categories.xml"/>
+    <include file="db/changelog/catalog/003-create-products.xml"/>
 </databaseChangeLog>

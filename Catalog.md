@@ -264,7 +264,7 @@ PRODUCT_WRITE  can create/update categories
 
 ## 6. Product V1
 
-Suggested v1 fields:
+Implemented v1 fields:
 
 ```text
 id UUID
@@ -289,6 +289,32 @@ version
 Use `BigDecimal` in Java for money and VAT.
 
 Do not use `double`.
+
+Current product endpoints:
+
+```text
+POST /api/internal/products
+GET  /api/internal/products
+GET  /api/internal/products/{id}
+PUT  /api/internal/products/{id}
+```
+
+Current list filters:
+
+```text
+query       searches name, product code, barcode, brand name, external id
+categoryId filters by category UUID
+active     filters active/inactive products
+```
+
+Current product errors:
+
+```text
+400 PRODUCT_CATEGORY_NOT_FOUND
+404 PRODUCT_NOT_FOUND
+409 PRODUCT_CODE_EXISTS
+409 PRODUCT_BARCODE_EXISTS
+```
 
 ## 7. Pricing and VAT
 

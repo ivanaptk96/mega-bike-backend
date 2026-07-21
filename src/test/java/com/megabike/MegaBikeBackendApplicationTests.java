@@ -1,6 +1,7 @@
 package com.megabike;
 
 import com.megabike.catalog.domain.CategoryRepository;
+import com.megabike.catalog.domain.ProductRepository;
 import com.megabike.identity.domain.RefreshTokenRepository;
 import com.megabike.identity.domain.UserAccountRepository;
 import org.junit.jupiter.api.Test;
@@ -36,6 +37,11 @@ class MegaBikeBackendApplicationTests {
 		@Bean
 		CategoryRepository categoryRepository() {
 			return Mockito.mock(CategoryRepository.class);
+		}
+
+		@Bean
+		ProductRepository productRepository() {
+			return Mockito.mock(ProductRepository.class);
 		}
 	}
 

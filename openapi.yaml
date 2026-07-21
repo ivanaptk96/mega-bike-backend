@@ -11,6 +11,7 @@ info:
     - POST /api/auth/logout is implemented.
     - GET /api/auth/me is implemented.
     - Category CRUD endpoints are implemented.
+    - Product CRUD and product listing/search endpoints are implemented.
     - JWT access tokens are created on login.
     - Incoming bearer-token validation is implemented.
     - Local Docker PostgreSQL is exposed on localhost:5433.
@@ -332,6 +333,194 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /api/internal/products:
+    post:
+      tags:
+        - Catalog
+      summary: Create product
+      operationId: createProduct
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductRequest'
+      responses:
+        '200':
+          description: Product created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductResponse'
+        '400':
+          description: Request body validation failed or category was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Missing, invalid, or expired bearer token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Missing PRODUCT_WRITE authority.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Product code or barcode already exists.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    get:
+      tags:
+        - Catalog
+      summary: List products
+      description: Searches by name, productCode, barcode, brandName, and externalId.
+      operationId: listProducts
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: query
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: categoryId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: active
+          in: query
+          required: false
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Products ordered by name.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProductResponse'
+        '401':
+          description: Missing, invalid, or expired bearer token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Missing PRODUCT_READ authority.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/internal/products/{id}:
+    get:
+      tags:
+        - Catalog
+      summary: Get product
+      operationId: getProduct
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Product.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductResponse'
+        '401':
+          description: Missing, invalid, or expired bearer token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Missing PRODUCT_READ authority.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Product was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags:
+        - Catalog
+      summary: Update product
+      operationId: updateProduct
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductRequest'
+      responses:
+        '200':
+          description: Product updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductResponse'
+        '400':
+          description: Request body validation failed or category was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Missing, invalid, or expired bearer token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Missing PRODUCT_WRITE authority.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Product was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Product code or barcode already exists.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 components:
   securitySchemes:
     bearerAuth:
@@ -512,6 +701,147 @@ components:
         parentName:
           type: string
           nullable: true
+        active:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
+    ProductRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - productCode
+        - name
+        - categoryId
+        - unit
+        - purchasePrice
+        - retailPrice
+        - vatRate
+        - retailPriceIncludesVat
+        - active
+      properties:
+        productCode:
+          type: string
+          maxLength: 50
+          example: MB-P-1001
+        externalId:
+          type: string
+          maxLength: 120
+          nullable: true
+          example: ALG-P-1001
+        barcode:
+          type: string
+          maxLength: 64
+          nullable: true
+          example: '8600000001001'
+        name:
+          type: string
+          maxLength: 240
+          example: Trail Helmet M
+        description:
+          type: string
+          maxLength: 2000
+          nullable: true
+        brandName:
+          type: string
+          maxLength: 160
+          nullable: true
+          example: Mega Bike
+        categoryId:
+          type: string
+          format: uuid
+        unit:
+          type: string
+          enum:
+            - PIECE
+        purchasePrice:
+          type: number
+          minimum: 0
+          multipleOf: 0.01
+          example: 38.00
+        retailPrice:
+          type: number
+          minimum: 0
+          multipleOf: 0.01
+          example: 59.99
+        vatRate:
+          type: number
+          minimum: 0
+          maximum: 100
+          multipleOf: 0.01
+          example: 20.00
+        retailPriceIncludesVat:
+          type: boolean
+          example: true
+        active:
+          type: boolean
+          example: true
+    ProductResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - productCode
+        - name
+        - categoryId
+        - categoryName
+        - unit
+        - purchasePrice
+        - retailPrice
+        - vatRate
+        - retailPriceIncludesVat
+        - active
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        productCode:
+          type: string
+          example: MB-P-1001
+        externalId:
+          type: string
+          nullable: true
+          example: ALG-P-1001
+        barcode:
+          type: string
+          nullable: true
+          example: '8600000001001'
+        name:
+          type: string
+          example: Trail Helmet M
+        description:
+          type: string
+          nullable: true
+        brandName:
+          type: string
+          nullable: true
+          example: Mega Bike
+        categoryId:
+          type: string
+          format: uuid
+        categoryName:
+          type: string
+          example: Bikes
+        unit:
+          type: string
+          enum:
+            - PIECE
+        purchasePrice:
+          type: number
+          example: 38.00
+        retailPrice:
+          type: number
+          example: 59.99
+        vatRate:
+          type: number
+          example: 20.00
+        retailPriceIncludesVat:
+          type: boolean
         active:
           type: boolean
         createdAt:

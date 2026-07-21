@@ -620,6 +620,234 @@
             "description": "Updates the category stored by Create Category. Requires PRODUCT_WRITE."
           },
           "response": []
+        },
+        {
+          "name": "Create Product",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Product created\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "const response = pm.response.json();",
+                  "pm.collectionVariables.set(\"productId\", response.id);",
+                  "pm.collectionVariables.set(\"productCode\", response.productCode);",
+                  "pm.collectionVariables.set(\"productBarcode\", response.barcode);",
+                  "",
+                  "pm.test(\"Product id is present\", function () {",
+                  "    pm.expect(response.id).to.be.a(\"string\").and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productCode\": \"MB-P-{{$timestamp}}\",\n  \"externalId\": \"ALG-P-{{$timestamp}}\",\n  \"barcode\": \"860{{$timestamp}}\",\n  \"name\": \"Trail Helmet M\",\n  \"description\": \"Mountain bike helmet, medium.\",\n  \"brandName\": \"Mega Bike\",\n  \"categoryId\": \"{{categoryId}}\",\n  \"unit\": \"PIECE\",\n  \"purchasePrice\": 38.00,\n  \"retailPrice\": 59.99,\n  \"vatRate\": 20.00,\n  \"retailPriceIncludesVat\": true,\n  \"active\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/internal/products",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "internal",
+                "products"
+              ]
+            },
+            "description": "Creates a product. Run Login - Admin or Login - Manager first, then Create Category so categoryId is set."
+          },
+          "response": []
+        },
+        {
+          "name": "List Products",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Products returned\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Response is an array\", function () {",
+                  "    pm.expect(pm.response.json()).to.be.an(\"array\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/internal/products?query=helmet&active=true",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "internal",
+                "products"
+              ],
+              "query": [
+                {
+                  "key": "query",
+                  "value": "helmet"
+                },
+                {
+                  "key": "active",
+                  "value": "true"
+                }
+              ]
+            },
+            "description": "Lists products. Optional query parameters are query, categoryId, and active."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Product",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Product returned\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/internal/products/{{productId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "internal",
+                "products",
+                "{{productId}}"
+              ]
+            },
+            "description": "Gets the product stored by Create Product."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Product",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Product updated\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const response = pm.response.json();",
+                  "pm.test(\"Product is inactive\", function () {",
+                  "    pm.expect(response.active).to.eql(false);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productCode\": \"{{productCode}}\",\n  \"externalId\": \"ALG-UPDATED-{{$timestamp}}\",\n  \"barcode\": \"{{productBarcode}}\",\n  \"name\": \"Trail Helmet M Updated\",\n  \"description\": \"Updated product description.\",\n  \"brandName\": \"Mega Bike\",\n  \"categoryId\": \"{{categoryId}}\",\n  \"unit\": \"PIECE\",\n  \"purchasePrice\": 39.00,\n  \"retailPrice\": 64.99,\n  \"vatRate\": 20.00,\n  \"retailPriceIncludesVat\": true,\n  \"active\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/internal/products/{{productId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "internal",
+                "products",
+                "{{productId}}"
+              ]
+            },
+            "description": "Updates the product stored by Create Product. Requires PRODUCT_WRITE."
+          },
+          "response": []
         }
       ]
     }
@@ -657,6 +885,21 @@
     },
     {
       "key": "categorySlug",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "productId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "productCode",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "productBarcode",
       "value": "",
       "type": "string"
     }

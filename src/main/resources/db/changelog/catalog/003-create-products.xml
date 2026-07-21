@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="001-create-product" author="codex">
+        <createTable tableName="product">
+            <column name="id" type="uuid">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_product"/>
+            </column>
+            <column name="product_code" type="varchar(50)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uk_product_product_code"/>
+            </column>
+            <column name="external_id" type="varchar(120)"/>
+            <column name="barcode" type="varchar(64)">
+                <constraints unique="true" uniqueConstraintName="uk_product_barcode"/>
+            </column>
+            <column name="name" type="varchar(240)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="varchar(2000)"/>
+            <column name="brand_name" type="varchar(160)"/>
+            <column name="category_id" type="uuid">
+                <constraints nullable="false"/>
+            </column>
+            <column name="unit" type="varchar(40)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="purchase_price" type="numeric(12, 2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="retail_price" type="numeric(12, 2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="vat_rate" type="numeric(5, 2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="retail_price_includes_vat" type="boolean" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="active" type="boolean" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp with time zone">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="timestamp with time zone"/>
+            <column name="version" type="bigint" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="product"
+                                 baseColumnNames="category_id"
+                                 constraintName="fk_product_category"
+                                 referencedTableName="category"
+                                 referencedColumnNames="id"
+                                 onDelete="RESTRICT"/>
+
+        <createIndex tableName="product" indexName="ix_product_category_id">
+            <column name="category_id"/>
+        </createIndex>
+        <createIndex tableName="product" indexName="ix_product_active">
+            <column name="active"/>
+        </createIndex>
+        <createIndex tableName="product" indexName="ix_product_brand_name">
+            <column name="brand_name"/>
+        </createIndex>
+        <createIndex tableName="product" indexName="ix_product_external_id">
+            <column name="external_id"/>
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>

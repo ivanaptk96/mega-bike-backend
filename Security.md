@@ -214,7 +214,7 @@ REPORT_VIEW
 Recommended approach:
 
 - First login slice can authorize by role.
-- Product management should introduce permissions.
+- Product and category management use permissions.
 - Long term, roles should be collections of permissions.
 
 Example:

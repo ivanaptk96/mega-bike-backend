@@ -8,4 +8,5 @@
     <include file="db/changelog/db.changelog-master.xml"/>
     <include file="db/changelog/identity/002-insert-dev-identity-data.xml"/>
     <include file="db/changelog/catalog/002-insert-dev-categories.xml"/>
+    <include file="db/changelog/catalog/004-insert-dev-products.xml"/>
 </databaseChangeLog>
