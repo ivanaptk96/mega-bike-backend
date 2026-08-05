@@ -5,6 +5,7 @@ import com.megabike.catalog.domain.ProductRepository;
 import com.megabike.inventory.api.InventoryItemResponse;
 import com.megabike.inventory.api.InventoryPageResponse;
 import com.megabike.inventory.api.StockAdjustmentRequest;
+import com.megabike.inventory.api.StockMovementPageResponse;
 import com.megabike.inventory.api.StockMovementResponse;
 import com.megabike.inventory.domain.InventoryItem;
 import com.megabike.inventory.domain.InventoryItemRepository;
@@ -119,6 +120,30 @@ public class InventoryService {
 		return toStockMovementResponse(stockMovementRepository.save(movement));
 	}
 
+	@Transactional(readOnly = true)
+	public StockMovementPageResponse listMovements(
+			UUID productId,
+			UUID stockLocationId,
+			MovementType movementType,
+			int page,
+			int size
+	) {
+		Page<StockMovementResponse> movements = stockMovementRepository.findAll(
+				movementSpecification(productId, stockLocationId, movementType),
+				PageRequest.of(validatePage(page), validateSize(size), Sort.by("createdAt").descending())
+		).map(this::toStockMovementResponse);
+
+		return new StockMovementPageResponse(
+				movements.getContent(),
+				movements.getNumber(),
+				movements.getSize(),
+				movements.getTotalElements(),
+				movements.getTotalPages(),
+				movements.isFirst(),
+				movements.isLast()
+		);
+	}
+
 	private InventoryItem findInventoryItem(UUID productId, UUID stockLocationId) {
 		return inventoryItemRepository.findWithProductAndStockLocationByProductIdAndStockLocationId(productId, stockLocationId)
 				.orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "INVENTORY_ITEM_NOT_FOUND", "Inventory item was not found."));
@@ -177,6 +202,24 @@ public class InventoryService {
 						criteriaBuilder.like(criteriaBuilder.lower(root.get("product").get("productCode")), pattern),
 						criteriaBuilder.like(criteriaBuilder.lower(root.get("product").get("barcode")), pattern)
 				));
+			}
+
+			return criteriaBuilder.and(predicates.toArray(Predicate[]::new));
+		};
+	}
+
+	private Specification<StockMovement> movementSpecification(UUID productId, UUID stockLocationId, MovementType movementType) {
+		return (root, criteriaQuery, criteriaBuilder) -> {
+			List<Predicate> predicates = new ArrayList<>();
+
+			if (productId != null) {
+				predicates.add(criteriaBuilder.equal(root.get("product").get("id"), productId));
+			}
+			if (stockLocationId != null) {
+				predicates.add(criteriaBuilder.equal(root.get("stockLocation").get("id"), stockLocationId));
+			}
+			if (movementType != null) {
+				predicates.add(criteriaBuilder.equal(root.get("movementType"), movementType));
 			}
 
 			return criteriaBuilder.and(predicates.toArray(Predicate[]::new));

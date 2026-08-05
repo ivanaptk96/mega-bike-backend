@@ -479,6 +479,8 @@ Current inventory endpoints:
 ```text
 GET  /api/internal/inventory
 GET  /api/internal/inventory/products/{productId}
+GET  /api/internal/inventory/movements
+GET  /api/internal/inventory/products/{productId}/movements
 POST /api/internal/inventory/adjustments
 ```
 

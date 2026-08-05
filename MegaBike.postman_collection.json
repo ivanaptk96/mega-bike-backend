@@ -981,6 +981,136 @@
           "response": []
         },
         {
+          "name": "List Stock Movements",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Stock movements returned\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Response is paged\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.content).to.be.an(\"array\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/internal/inventory/movements?productId={{devProductId}}&stockLocationId={{stockLocationId}}&movementType=ADJUSTMENT&page=0&size=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "internal",
+                "inventory",
+                "movements"
+              ],
+              "query": [
+                {
+                  "key": "productId",
+                  "value": "{{devProductId}}"
+                },
+                {
+                  "key": "stockLocationId",
+                  "value": "{{stockLocationId}}"
+                },
+                {
+                  "key": "movementType",
+                  "value": "ADJUSTMENT"
+                },
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Lists stock movement history. Run Create Stock Adjustment first if you want visible movement rows."
+          },
+          "response": []
+        },
+        {
+          "name": "List Product Stock Movements",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Product stock movements returned\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Response is paged\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.content).to.be.an(\"array\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/internal/inventory/products/{{devProductId}}/movements?page=0&size=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "internal",
+                "inventory",
+                "products",
+                "{{devProductId}}",
+                "movements"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Lists stock movement history for the dev product."
+          },
+          "response": []
+        },
+        {
           "name": "Create Stock Adjustment",
           "event": [
             {

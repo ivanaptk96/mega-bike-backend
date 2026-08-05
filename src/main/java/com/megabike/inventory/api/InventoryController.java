@@ -1,6 +1,7 @@
 package com.megabike.inventory.api;
 
 import com.megabike.inventory.application.InventoryService;
+import com.megabike.inventory.domain.MovementType;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -42,6 +43,30 @@ public class InventoryController {
 			@RequestParam UUID stockLocationId
 	) {
 		return inventoryService.getProductInventory(productId, stockLocationId);
+	}
+
+	@GetMapping("/movements")
+	@PreAuthorize("hasAuthority('STOCK_RECEIVE')")
+	public StockMovementPageResponse listMovements(
+			@RequestParam(required = false) UUID productId,
+			@RequestParam(required = false) UUID stockLocationId,
+			@RequestParam(required = false) MovementType movementType,
+			@RequestParam(defaultValue = "0") int page,
+			@RequestParam(defaultValue = "20") int size
+	) {
+		return inventoryService.listMovements(productId, stockLocationId, movementType, page, size);
+	}
+
+	@GetMapping("/products/{productId}/movements")
+	@PreAuthorize("hasAuthority('STOCK_RECEIVE')")
+	public StockMovementPageResponse listProductMovements(
+			@PathVariable UUID productId,
+			@RequestParam(required = false) UUID stockLocationId,
+			@RequestParam(required = false) MovementType movementType,
+			@RequestParam(defaultValue = "0") int page,
+			@RequestParam(defaultValue = "20") int size
+	) {
+		return inventoryService.listMovements(productId, stockLocationId, movementType, page, size);
 	}
 
 	@PostMapping("/adjustments")

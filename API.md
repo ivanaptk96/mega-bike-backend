@@ -42,6 +42,8 @@ GET  /api/internal/products/{id}
 PUT  /api/internal/products/{id}
 GET  /api/internal/inventory
 GET  /api/internal/inventory/products/{productId}
+GET  /api/internal/inventory/movements
+GET  /api/internal/inventory/products/{productId}/movements
 POST /api/internal/inventory/adjustments
 ```
 
@@ -709,6 +711,85 @@ Adjustment errors:
 400 INVENTORY_NEGATIVE_STOCK
 400 INVENTORY_PRODUCT_NOT_FOUND
 400 STOCK_LOCATION_NOT_FOUND
+```
+
+### GET /api/internal/inventory/movements
+
+Lists stock movement audit history with pagination.
+
+Route:
+
+```http
+GET /api/internal/inventory/movements
+Authorization: Bearer <accessToken>
+```
+
+Optional query parameters:
+
+```text
+productId       filters by product UUID
+stockLocationId filters by stock location UUID
+movementType    filters by movement type, currently ADJUSTMENT
+page            zero-based page number, default 0
+size            page size from 1 to 100, default 20
+```
+
+Example:
+
+```http
+GET /api/internal/inventory/movements?productId=50000000-0000-0000-0000-000000000001&movementType=ADJUSTMENT
+Authorization: Bearer <accessToken>
+```
+
+Successful response:
+
+```json
+{
+  "content": [
+    {
+      "id": "7cfdb8db-83d4-49aa-bbb6-59dc2ef7001c",
+      "productId": "50000000-0000-0000-0000-000000000001",
+      "productCode": "MB-P-0001",
+      "productName": "Trail Helmet M",
+      "stockLocationId": "60000000-0000-0000-0000-000000000001",
+      "stockLocationCode": "STORE",
+      "stockLocationName": "Mega Bike Store",
+      "movementType": "ADJUSTMENT",
+      "quantityDelta": 2.000,
+      "quantityAfter": 7.000,
+      "reason": "Cycle count correction",
+      "referenceText": "COUNT-1",
+      "createdBy": "admin@megabike.local",
+      "createdAt": "2026-08-05T08:00:00Z"
+    }
+  ],
+  "page": 0,
+  "size": 20,
+  "totalElements": 1,
+  "totalPages": 1,
+  "first": true,
+  "last": true
+}
+```
+
+### GET /api/internal/inventory/products/{productId}/movements
+
+Lists stock movement audit history for one product.
+
+Route:
+
+```http
+GET /api/internal/inventory/products/{productId}/movements
+Authorization: Bearer <accessToken>
+```
+
+Optional query parameters:
+
+```text
+stockLocationId
+movementType
+page
+size
 ```
 
 ## Dev Users

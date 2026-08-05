@@ -108,6 +108,37 @@ class InventoryIntegrationTests {
 	}
 
 	@Test
+	void employeeCanListStockMovements() {
+		String adminToken = login("admin@megabike.local", "password").accessToken();
+		String employeeToken = login("employee@megabike.local", "password").accessToken();
+		TestResponse<StockMovementResponse> adjustment = post(
+				"/api/internal/inventory/adjustments",
+				new StockAdjustmentRequest(DEV_PRODUCT_ID, STORE_LOCATION_ID, new BigDecimal("1.000"), "History endpoint test", "HISTORY-1"),
+				adminToken,
+				StockMovementResponse.class
+		);
+
+		TestResponse<StockMovementPageResponse> movements = get(
+				"/api/internal/inventory/movements?productId=" + DEV_PRODUCT_ID + "&stockLocationId=" + STORE_LOCATION_ID + "&movementType=ADJUSTMENT",
+				employeeToken,
+				StockMovementPageResponse.class
+		);
+
+		assertThat(movements.status()).isEqualTo(HttpStatus.OK.value());
+		assertThat(movements.body().content()).extracting(StockMovementResponse::id).contains(adjustment.body().id());
+		assertThat(movements.body().content().getFirst().movementType()).isEqualTo(adjustment.body().movementType());
+
+		TestResponse<StockMovementPageResponse> productMovements = get(
+				"/api/internal/inventory/products/" + DEV_PRODUCT_ID + "/movements?page=0&size=20",
+				employeeToken,
+				StockMovementPageResponse.class
+		);
+
+		assertThat(productMovements.status()).isEqualTo(HttpStatus.OK.value());
+		assertThat(productMovements.body().content()).extracting(StockMovementResponse::id).contains(adjustment.body().id());
+	}
+
+	@Test
 	void managerCannotAdjustInventory() {
 		String token = login("manager@megabike.local", "password").accessToken();
 

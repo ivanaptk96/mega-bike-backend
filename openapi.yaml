@@ -12,7 +12,7 @@ info:
     - GET /api/auth/me is implemented.
     - Category CRUD endpoints are implemented.
     - Product CRUD and paged product listing/search endpoints are implemented.
-    - Inventory listing, product inventory lookup, and manual stock adjustment endpoints are implemented.
+    - Inventory listing, product inventory lookup, movement history, and manual stock adjustment endpoints are implemented.
     - JWT access tokens are created on login.
     - Incoming bearer-token validation is implemented.
     - Local Docker PostgreSQL is exposed on localhost:5433.
@@ -675,6 +675,144 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /api/internal/inventory/movements:
+    get:
+      tags:
+        - Inventory
+      summary: List stock movements
+      description: Lists stock movement audit history ordered newest first.
+      operationId: listStockMovements
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: productId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: stockLocationId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: movementType
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - ADJUSTMENT
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: Paged stock movements.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StockMovementPageResponse'
+        '400':
+          description: Invalid pagination request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Missing, invalid, or expired bearer token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Missing STOCK_RECEIVE authority.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/internal/inventory/products/{productId}/movements:
+    get:
+      tags:
+        - Inventory
+      summary: List product stock movements
+      description: Lists stock movement audit history for one product ordered newest first.
+      operationId: listProductStockMovements
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: stockLocationId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: movementType
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - ADJUSTMENT
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: Paged product stock movements.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StockMovementPageResponse'
+        '400':
+          description: Invalid pagination request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Missing, invalid, or expired bearer token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Missing STOCK_RECEIVE authority.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /api/internal/inventory/adjustments:
     post:
       tags:
@@ -1263,6 +1401,44 @@ components:
         createdAt:
           type: string
           format: date-time
+    StockMovementPageResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - content
+        - page
+        - size
+        - totalElements
+        - totalPages
+        - first
+        - last
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/StockMovementResponse'
+        page:
+          type: integer
+          minimum: 0
+          example: 0
+        size:
+          type: integer
+          minimum: 1
+          maximum: 100
+          example: 20
+        totalElements:
+          type: integer
+          format: int64
+          example: 4
+        totalPages:
+          type: integer
+          example: 1
+        first:
+          type: boolean
+          example: true
+        last:
+          type: boolean
+          example: true
     ErrorResponse:
       type: object
       additionalProperties: false

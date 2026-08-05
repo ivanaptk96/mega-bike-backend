@@ -70,6 +70,8 @@ Inventory:
 ```text
 GET  /api/internal/inventory
 GET  /api/internal/inventory/products/{productId}
+GET  /api/internal/inventory/movements
+GET  /api/internal/inventory/products/{productId}/movements
 POST /api/internal/inventory/adjustments
 ```
 
@@ -220,6 +222,20 @@ POST /api/internal/inventory/adjustments
   "referenceText": "COUNT-1"
 }
 ```
+
+Stock movement history:
+
+```http
+GET /api/internal/inventory/movements?productId=50000000-0000-0000-0000-000000000001&movementType=ADJUSTMENT&page=0&size=20
+```
+
+Product movement history:
+
+```http
+GET /api/internal/inventory/products/50000000-0000-0000-0000-000000000001/movements?page=0&size=20
+```
+
+Movement list responses are paged and ordered by newest movement first.
 
 ## Permissions
 
