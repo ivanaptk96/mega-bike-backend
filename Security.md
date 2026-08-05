@@ -305,6 +305,8 @@ Permission authorities are exposed directly:
 USER_MANAGE
 PRODUCT_READ
 PRODUCT_WRITE
+STOCK_RECEIVE
+STOCK_ADJUST
 ```
 
 `JwtService`

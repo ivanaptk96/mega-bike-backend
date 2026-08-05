@@ -65,6 +65,14 @@ GET  /api/internal/products/{id}
 PUT  /api/internal/products/{id}
 ```
 
+Inventory:
+
+```text
+GET  /api/internal/inventory
+GET  /api/internal/inventory/products/{productId}
+POST /api/internal/inventory/adjustments
+```
+
 ## Product Listing Filters
 
 `GET /api/internal/products` supports optional filters:
@@ -155,11 +163,63 @@ Important assumptions:
 
 - There is no delete endpoint yet.
 - Product images are not implemented yet.
-- Inventory/stock is not implemented yet.
 - Supplier-specific product codes are not modeled separately yet.
 - Prices are sent as decimal numbers, not strings.
 - `retailPriceIncludesVat` should usually be `true`.
 - The only supported product unit is currently `PIECE`.
+
+## Inventory Notes
+
+Current inventory assumptions:
+
+```text
+one default stock location: STORE
+negative stock is not allowed
+manual adjustments are applied immediately
+every adjustment creates a movement audit row
+```
+
+Dev stock location:
+
+```text
+60000000-0000-0000-0000-000000000001
+STORE
+Mega Bike Store
+```
+
+Inventory listing:
+
+```http
+GET /api/internal/inventory?query=helmet&page=0&size=20
+```
+
+Inventory list responses are paged:
+
+```text
+content
+page
+size
+totalElements
+totalPages
+first
+last
+```
+
+Manual adjustment:
+
+```http
+POST /api/internal/inventory/adjustments
+```
+
+```json
+{
+  "productId": "50000000-0000-0000-0000-000000000001",
+  "stockLocationId": "60000000-0000-0000-0000-000000000001",
+  "quantityDelta": 2.000,
+  "reason": "Cycle count correction",
+  "referenceText": "COUNT-1"
+}
+```
 
 ## Permissions
 
@@ -167,12 +227,14 @@ Read access:
 
 ```text
 PRODUCT_READ
+STOCK_RECEIVE
 ```
 
 Create/update access:
 
 ```text
 PRODUCT_WRITE
+STOCK_ADJUST
 ```
 
 Current dev behavior:

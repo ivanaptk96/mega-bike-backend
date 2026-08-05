@@ -12,6 +12,7 @@ info:
     - GET /api/auth/me is implemented.
     - Category CRUD endpoints are implemented.
     - Product CRUD and paged product listing/search endpoints are implemented.
+    - Inventory listing, product inventory lookup, and manual stock adjustment endpoints are implemented.
     - JWT access tokens are created on login.
     - Incoming bearer-token validation is implemented.
     - Local Docker PostgreSQL is exposed on localhost:5433.
@@ -23,6 +24,8 @@ tags:
     description: Authentication endpoints
   - name: Catalog
     description: Catalog endpoints
+  - name: Inventory
+    description: Inventory and stock endpoints
 paths:
   /api/auth/login:
     post:
@@ -564,6 +567,154 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /api/internal/inventory:
+    get:
+      tags:
+        - Inventory
+      summary: List inventory
+      description: Lists inventory items with current quantity by product and stock location.
+      operationId: listInventory
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: query
+          in: query
+          required: false
+          description: Searches product name, productCode, and barcode.
+          schema:
+            type: string
+        - name: stockLocationId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: Paged inventory items.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryPageResponse'
+        '400':
+          description: Invalid pagination request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Missing, invalid, or expired bearer token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Missing STOCK_RECEIVE authority.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/internal/inventory/products/{productId}:
+    get:
+      tags:
+        - Inventory
+      summary: Get product inventory
+      operationId: getProductInventory
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: stockLocationId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Inventory item.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryItemResponse'
+        '401':
+          description: Missing, invalid, or expired bearer token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Missing STOCK_RECEIVE authority.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Inventory item was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/internal/inventory/adjustments:
+    post:
+      tags:
+        - Inventory
+      summary: Create stock adjustment
+      description: Applies a manual stock quantity adjustment and records a stock movement.
+      operationId: createStockAdjustment
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StockAdjustmentRequest'
+      responses:
+        '200':
+          description: Stock adjustment recorded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StockMovementResponse'
+        '400':
+          description: Request body validation failed or adjustment would make stock negative.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Missing, invalid, or expired bearer token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Missing STOCK_ADJUST authority.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 components:
   securitySchemes:
     bearerAuth:
@@ -932,6 +1083,186 @@ components:
         last:
           type: boolean
           example: false
+    InventoryItemResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - productId
+        - productCode
+        - productName
+        - stockLocationId
+        - stockLocationCode
+        - stockLocationName
+        - quantityOnHand
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        productId:
+          type: string
+          format: uuid
+        productCode:
+          type: string
+          example: MB-P-0001
+        productName:
+          type: string
+          example: Trail Helmet M
+        barcode:
+          type: string
+          nullable: true
+          example: '8600000000011'
+        stockLocationId:
+          type: string
+          format: uuid
+        stockLocationCode:
+          type: string
+          example: STORE
+        stockLocationName:
+          type: string
+          example: Mega Bike Store
+        quantityOnHand:
+          type: number
+          multipleOf: 0.001
+          example: 5.000
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
+    InventoryPageResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - content
+        - page
+        - size
+        - totalElements
+        - totalPages
+        - first
+        - last
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/InventoryItemResponse'
+        page:
+          type: integer
+          minimum: 0
+          example: 0
+        size:
+          type: integer
+          minimum: 1
+          maximum: 100
+          example: 20
+        totalElements:
+          type: integer
+          format: int64
+          example: 2
+        totalPages:
+          type: integer
+          example: 1
+        first:
+          type: boolean
+          example: true
+        last:
+          type: boolean
+          example: true
+    StockAdjustmentRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - productId
+        - stockLocationId
+        - quantityDelta
+        - reason
+      properties:
+        productId:
+          type: string
+          format: uuid
+        stockLocationId:
+          type: string
+          format: uuid
+        quantityDelta:
+          type: number
+          multipleOf: 0.001
+          example: 2.000
+        reason:
+          type: string
+          maxLength: 500
+          example: Cycle count correction
+        referenceText:
+          type: string
+          maxLength: 160
+          nullable: true
+          example: COUNT-1
+    StockMovementResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - productId
+        - productCode
+        - productName
+        - stockLocationId
+        - stockLocationCode
+        - stockLocationName
+        - movementType
+        - quantityDelta
+        - quantityAfter
+        - reason
+        - createdBy
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        productId:
+          type: string
+          format: uuid
+        productCode:
+          type: string
+          example: MB-P-0001
+        productName:
+          type: string
+          example: Trail Helmet M
+        stockLocationId:
+          type: string
+          format: uuid
+        stockLocationCode:
+          type: string
+          example: STORE
+        stockLocationName:
+          type: string
+          example: Mega Bike Store
+        movementType:
+          type: string
+          enum:
+            - ADJUSTMENT
+        quantityDelta:
+          type: number
+          multipleOf: 0.001
+          example: 2.000
+        quantityAfter:
+          type: number
+          multipleOf: 0.001
+          example: 7.000
+        reason:
+          type: string
+          example: Cycle count correction
+        referenceText:
+          type: string
+          nullable: true
+          example: COUNT-1
+        createdBy:
+          type: string
+          example: admin@megabike.local
+        createdAt:
+          type: string
+          format: date-time
     ErrorResponse:
       type: object
       additionalProperties: false

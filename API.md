@@ -40,6 +40,9 @@ POST /api/internal/products
 GET  /api/internal/products
 GET  /api/internal/products/{id}
 PUT  /api/internal/products/{id}
+GET  /api/internal/inventory
+GET  /api/internal/inventory/products/{productId}
+POST /api/internal/inventory/adjustments
 ```
 
 ## Authentication
@@ -561,6 +564,152 @@ Content-Type: application/json
 ```
 
 Request body is the same shape as `POST /api/internal/products`.
+
+## Inventory
+
+Inventory endpoints are protected internal endpoints.
+
+Required authorities:
+
+```text
+STOCK_RECEIVE  list/read inventory
+STOCK_ADJUST   create manual stock adjustments
+```
+
+Current assumptions:
+
+```text
+one default stock location: STORE
+negative stock is not allowed
+manual adjustments are applied immediately
+every adjustment creates a stock movement audit row
+```
+
+### GET /api/internal/inventory
+
+Lists inventory items with pagination.
+
+Route:
+
+```http
+GET /api/internal/inventory
+Authorization: Bearer <accessToken>
+```
+
+Optional query parameters:
+
+```text
+query           searches product name, product code, barcode
+stockLocationId filters by stock location UUID
+page            zero-based page number, default 0
+size            page size from 1 to 100, default 20
+```
+
+Example:
+
+```http
+GET /api/internal/inventory?query=helmet&page=0&size=20
+Authorization: Bearer <accessToken>
+```
+
+Successful response:
+
+```json
+{
+  "content": [
+    {
+      "id": "70000000-0000-0000-0000-000000000001",
+      "productId": "50000000-0000-0000-0000-000000000001",
+      "productCode": "MB-P-0001",
+      "productName": "Trail Helmet M",
+      "barcode": "8600000000011",
+      "stockLocationId": "60000000-0000-0000-0000-000000000001",
+      "stockLocationCode": "STORE",
+      "stockLocationName": "Mega Bike Store",
+      "quantityOnHand": 5.000,
+      "createdAt": "2026-01-01T00:00:00Z",
+      "updatedAt": null
+    }
+  ],
+  "page": 0,
+  "size": 20,
+  "totalElements": 1,
+  "totalPages": 1,
+  "first": true,
+  "last": true
+}
+```
+
+### GET /api/internal/inventory/products/{productId}
+
+Returns inventory for one product at one stock location.
+
+Route:
+
+```http
+GET /api/internal/inventory/products/{productId}?stockLocationId={stockLocationId}
+Authorization: Bearer <accessToken>
+```
+
+Missing inventory item:
+
+```text
+404 INVENTORY_ITEM_NOT_FOUND
+```
+
+### POST /api/internal/inventory/adjustments
+
+Creates a manual stock adjustment and records a stock movement.
+
+Route:
+
+```http
+POST /api/internal/inventory/adjustments
+Authorization: Bearer <accessToken>
+Content-Type: application/json
+```
+
+Request body:
+
+```json
+{
+  "productId": "50000000-0000-0000-0000-000000000001",
+  "stockLocationId": "60000000-0000-0000-0000-000000000001",
+  "quantityDelta": 2.000,
+  "reason": "Cycle count correction",
+  "referenceText": "COUNT-1"
+}
+```
+
+Successful response:
+
+```json
+{
+  "id": "7cfdb8db-83d4-49aa-bbb6-59dc2ef7001c",
+  "productId": "50000000-0000-0000-0000-000000000001",
+  "productCode": "MB-P-0001",
+  "productName": "Trail Helmet M",
+  "stockLocationId": "60000000-0000-0000-0000-000000000001",
+  "stockLocationCode": "STORE",
+  "stockLocationName": "Mega Bike Store",
+  "movementType": "ADJUSTMENT",
+  "quantityDelta": 2.000,
+  "quantityAfter": 7.000,
+  "reason": "Cycle count correction",
+  "referenceText": "COUNT-1",
+  "createdBy": "admin@megabike.local",
+  "createdAt": "2026-08-05T08:00:00Z"
+}
+```
+
+Adjustment errors:
+
+```text
+400 INVENTORY_ADJUSTMENT_INVALID
+400 INVENTORY_NEGATIVE_STOCK
+400 INVENTORY_PRODUCT_NOT_FOUND
+400 STOCK_LOCATION_NOT_FOUND
+```
 
 ## Dev Users
 

@@ -868,6 +868,181 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "Inventory",
+      "item": [
+        {
+          "name": "List Inventory",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Inventory returned\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Response is paged\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.content).to.be.an(\"array\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/internal/inventory?page=0&size=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "internal",
+                "inventory"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Lists inventory items. Run any successful login first."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Product Inventory",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Inventory item returned\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/internal/inventory/products/{{devProductId}}?stockLocationId={{stockLocationId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "internal",
+                "inventory",
+                "products",
+                "{{devProductId}}"
+              ],
+              "query": [
+                {
+                  "key": "stockLocationId",
+                  "value": "{{stockLocationId}}"
+                }
+              ]
+            },
+            "description": "Gets inventory for a product at the dev STORE stock location."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Stock Adjustment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Stock adjustment created\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const response = pm.response.json();",
+                  "pm.test(\"Movement type is ADJUSTMENT\", function () {",
+                  "    pm.expect(response.movementType).to.eql(\"ADJUSTMENT\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"{{devProductId}}\",\n  \"stockLocationId\": \"{{stockLocationId}}\",\n  \"quantityDelta\": 1.000,\n  \"reason\": \"Postman stock adjustment\",\n  \"referenceText\": \"POSTMAN-{{$timestamp}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/internal/inventory/adjustments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "internal",
+                "inventory",
+                "adjustments"
+              ]
+            },
+            "description": "Creates a manual stock adjustment. Requires admin because the dev manager and employee do not have STOCK_ADJUST."
+          },
+          "response": []
+        }
+      ]
     }
   ],
   "variable": [
@@ -919,6 +1094,16 @@
     {
       "key": "productBarcode",
       "value": "",
+      "type": "string"
+    },
+    {
+      "key": "stockLocationId",
+      "value": "60000000-0000-0000-0000-000000000001",
+      "type": "string"
+    },
+    {
+      "key": "devProductId",
+      "value": "50000000-0000-0000-0000-000000000001",
       "type": "string"
     }
   ]

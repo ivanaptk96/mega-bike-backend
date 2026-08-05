@@ -4,6 +4,9 @@ import com.megabike.catalog.domain.CategoryRepository;
 import com.megabike.catalog.domain.ProductRepository;
 import com.megabike.identity.domain.RefreshTokenRepository;
 import com.megabike.identity.domain.UserAccountRepository;
+import com.megabike.inventory.domain.InventoryItemRepository;
+import com.megabike.inventory.domain.StockLocationRepository;
+import com.megabike.inventory.domain.StockMovementRepository;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -42,6 +45,21 @@ class MegaBikeBackendApplicationTests {
 		@Bean
 		ProductRepository productRepository() {
 			return Mockito.mock(ProductRepository.class);
+		}
+
+		@Bean
+		InventoryItemRepository inventoryItemRepository() {
+			return Mockito.mock(InventoryItemRepository.class);
+		}
+
+		@Bean
+		StockLocationRepository stockLocationRepository() {
+			return Mockito.mock(StockLocationRepository.class);
+		}
+
+		@Bean
+		StockMovementRepository stockMovementRepository() {
+			return Mockito.mock(StockMovementRepository.class);
 		}
 	}
 

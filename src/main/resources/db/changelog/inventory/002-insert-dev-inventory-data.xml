@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="001-insert-dev-stock-location" author="codex">
+        <insert tableName="stock_location">
+            <column name="id" value="60000000-0000-0000-0000-000000000001"/>
+            <column name="code" value="STORE"/>
+            <column name="name" value="Mega Bike Store"/>
+            <column name="active" valueBoolean="true"/>
+            <column name="created_at" value="2026-01-01 00:00:00+00"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+    </changeSet>
+
+    <changeSet id="002-insert-dev-inventory-items" author="codex">
+        <insert tableName="inventory_item">
+            <column name="id" value="70000000-0000-0000-0000-000000000001"/>
+            <column name="product_id" value="50000000-0000-0000-0000-000000000001"/>
+            <column name="stock_location_id" value="60000000-0000-0000-0000-000000000001"/>
+            <column name="quantity_on_hand" valueNumeric="5.000"/>
+            <column name="created_at" value="2026-01-01 00:00:00+00"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+        <insert tableName="inventory_item">
+            <column name="id" value="70000000-0000-0000-0000-000000000002"/>
+            <column name="product_id" value="50000000-0000-0000-0000-000000000002"/>
+            <column name="stock_location_id" value="60000000-0000-0000-0000-000000000001"/>
+            <column name="quantity_on_hand" valueNumeric="12.000"/>
+            <column name="created_at" value="2026-01-01 00:00:00+00"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+    </changeSet>
+</databaseChangeLog>

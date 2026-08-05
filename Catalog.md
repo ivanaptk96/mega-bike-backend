@@ -466,6 +466,31 @@ stock_item
 stock_movement
 ```
 
+Current inventory foundation uses:
+
+```text
+stock_location
+inventory_item
+stock_movement
+```
+
+Current inventory endpoints:
+
+```text
+GET  /api/internal/inventory
+GET  /api/internal/inventory/products/{productId}
+POST /api/internal/inventory/adjustments
+```
+
+Current inventory rules:
+
+```text
+STOCK_RECEIVE  can list/read inventory
+STOCK_ADJUST   can create manual stock adjustments
+```
+
+V1 does not allow negative stock.
+
 For now, product endpoints should not return authoritative stock quantities.
 
 ## 11. Allegra POS Boundary

@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="001-create-stock-location" author="codex">
+        <createTable tableName="stock_location">
+            <column name="id" type="uuid">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_stock_location"/>
+            </column>
+            <column name="code" type="varchar(50)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uk_stock_location_code"/>
+            </column>
+            <column name="name" type="varchar(160)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="active" type="boolean" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp with time zone">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="timestamp with time zone"/>
+            <column name="version" type="bigint" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createIndex tableName="stock_location" indexName="ix_stock_location_active">
+            <column name="active"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="002-create-inventory-item" author="codex">
+        <createTable tableName="inventory_item">
+            <column name="id" type="uuid">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_inventory_item"/>
+            </column>
+            <column name="product_id" type="uuid">
+                <constraints nullable="false"/>
+            </column>
+            <column name="stock_location_id" type="uuid">
+                <constraints nullable="false"/>
+            </column>
+            <column name="quantity_on_hand" type="numeric(12, 3)" defaultValueNumeric="0.000">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp with time zone">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="timestamp with time zone"/>
+            <column name="version" type="bigint" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addUniqueConstraint tableName="inventory_item"
+                             columnNames="product_id, stock_location_id"
+                             constraintName="uk_inventory_item_product_location"/>
+        <addForeignKeyConstraint baseTableName="inventory_item"
+                                 baseColumnNames="product_id"
+                                 constraintName="fk_inventory_item_product"
+                                 referencedTableName="product"
+                                 referencedColumnNames="id"
+                                 onDelete="RESTRICT"/>
+        <addForeignKeyConstraint baseTableName="inventory_item"
+                                 baseColumnNames="stock_location_id"
+                                 constraintName="fk_inventory_item_stock_location"
+                                 referencedTableName="stock_location"
+                                 referencedColumnNames="id"
+                                 onDelete="RESTRICT"/>
+
+        <createIndex tableName="inventory_item" indexName="ix_inventory_item_product_id">
+            <column name="product_id"/>
+        </createIndex>
+        <createIndex tableName="inventory_item" indexName="ix_inventory_item_stock_location_id">
+            <column name="stock_location_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="003-create-stock-movement" author="codex">
+        <createTable tableName="stock_movement">
+            <column name="id" type="uuid">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_stock_movement"/>
+            </column>
+            <column name="product_id" type="uuid">
+                <constraints nullable="false"/>
+            </column>
+            <column name="stock_location_id" type="uuid">
+                <constraints nullable="false"/>
+            </column>
+            <column name="movement_type" type="varchar(40)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="quantity_delta" type="numeric(12, 3)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="quantity_after" type="numeric(12, 3)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="reason" type="varchar(500)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="reference_text" type="varchar(160)"/>
+            <column name="created_by" type="varchar(320)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp with time zone">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="stock_movement"
+                                 baseColumnNames="product_id"
+                                 constraintName="fk_stock_movement_product"
+                                 referencedTableName="product"
+                                 referencedColumnNames="id"
+                                 onDelete="RESTRICT"/>
+        <addForeignKeyConstraint baseTableName="stock_movement"
+                                 baseColumnNames="stock_location_id"
+                                 constraintName="fk_stock_movement_stock_location"
+                                 referencedTableName="stock_location"
+                                 referencedColumnNames="id"
+                                 onDelete="RESTRICT"/>
+
+        <createIndex tableName="stock_movement" indexName="ix_stock_movement_product_id">
+            <column name="product_id"/>
+        </createIndex>
+        <createIndex tableName="stock_movement" indexName="ix_stock_movement_stock_location_id">
+            <column name="stock_location_id"/>
+        </createIndex>
+        <createIndex tableName="stock_movement" indexName="ix_stock_movement_created_at">
+            <column name="created_at"/>
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>
