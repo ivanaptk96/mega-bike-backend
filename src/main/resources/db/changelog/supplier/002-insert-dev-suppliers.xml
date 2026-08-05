@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="001-insert-planet-bike-supplier" author="codex">
+        <insert tableName="supplier">
+            <column name="id" value="80000000-0000-0000-0000-000000000001"/>
+            <column name="code" value="PLANET_BIKE"/>
+            <column name="name" value="Planet Bike"/>
+            <column name="public_url" value="https://planetbike.rs/"/>
+            <column name="b2b_url" value="https://planetbike-b2b.rs/dashboard/documents"/>
+            <column name="default_currency" value="RSD"/>
+            <column name="active" valueBoolean="true"/>
+            <column name="created_at" value="2026-01-01 00:00:00+00"/>
+            <column name="version" valueNumeric="0"/>
+        </insert>
+    </changeSet>
+</databaseChangeLog>

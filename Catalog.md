@@ -389,14 +389,19 @@ supplier_product
 - minimum_order_quantity
 ```
 
-For first product CRUD, postpone supplier tables unless product search by supplier code is absolutely needed immediately.
+Supplier tables are now implemented in the supplier module.
 
-Recommended:
+Current status:
 
 ```text
-Document supplier-code search as planned.
-Implement it when the purchasing/supplier module starts.
+supplier
+supplier_product
+supplier_price_snapshot
+supplier_import_run
+supplier_import_issue
 ```
+
+Supplier-code search for internal products is still a later product-search enhancement. For now, supplier product mappings can be listed and filtered from the supplier endpoints.
 
 ## 9. Search Requirements
 
@@ -422,7 +427,7 @@ category_id
 active
 ```
 
-Supplier-code search should come later with supplier product mapping.
+Supplier-code search should come later by joining against supplier product mapping.
 
 First product list endpoint:
 

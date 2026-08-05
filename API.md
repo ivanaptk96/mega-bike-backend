@@ -45,6 +45,18 @@ GET  /api/internal/inventory/products/{productId}
 GET  /api/internal/inventory/movements
 GET  /api/internal/inventory/products/{productId}/movements
 POST /api/internal/inventory/adjustments
+POST /api/internal/suppliers
+GET  /api/internal/suppliers
+GET  /api/internal/suppliers/{id}
+PUT  /api/internal/suppliers/{id}
+POST /api/internal/supplier-products
+GET  /api/internal/supplier-products
+GET  /api/internal/supplier-products/{id}
+PUT  /api/internal/supplier-products/{id}
+POST /api/internal/suppliers/{supplierId}/imports
+GET  /api/internal/suppliers/{supplierId}/imports
+GET  /api/internal/supplier-imports/{importRunId}
+GET  /api/internal/supplier-imports/{importRunId}/issues
 ```
 
 ## Authentication
@@ -793,6 +805,136 @@ size
 ```
 
 ## Dev Users
+
+## Suppliers
+
+Supplier endpoints are protected internal endpoints.
+
+Required authority:
+
+```text
+SUPPLIER_MANAGE
+```
+
+Current dev seed:
+
+```text
+80000000-0000-0000-0000-000000000001
+PLANET_BIKE
+Planet Bike
+RSD
+```
+
+### Supplier CRUD
+
+```text
+POST /api/internal/suppliers
+GET  /api/internal/suppliers
+GET  /api/internal/suppliers/{id}
+PUT  /api/internal/suppliers/{id}
+```
+
+Supplier request:
+
+```json
+{
+  "code": "PLANET_BIKE",
+  "name": "Planet Bike",
+  "publicUrl": "https://planetbike.rs/",
+  "b2bUrl": "https://planetbike-b2b.rs/dashboard/documents",
+  "defaultCurrency": "RSD",
+  "active": true
+}
+```
+
+### Supplier Product Mapping
+
+```text
+POST /api/internal/supplier-products
+GET  /api/internal/supplier-products?supplierId={supplierId}&query={query}&active=true&page=0&size=20
+GET  /api/internal/supplier-products/{id}
+PUT  /api/internal/supplier-products/{id}
+```
+
+Supplier product request:
+
+```json
+{
+  "supplierId": "80000000-0000-0000-0000-000000000001",
+  "productId": null,
+  "supplierCode": "PB-123",
+  "supplierBarcode": "8600000000999",
+  "supplierProductName": "Planet Bike Product",
+  "brandName": "Planet Bike",
+  "categoryText": "Bikes",
+  "description": "Supplier description.",
+  "imageUrl": "https://planetbike.rs/product.jpg",
+  "active": true
+}
+```
+
+`productId` is nullable. This allows imported supplier products to exist before manual review links them to an internal Mega Bike product.
+
+### Planet Bike Lager Lista Import
+
+```http
+POST /api/internal/suppliers/{supplierId}/imports
+Authorization: Bearer <accessToken>
+Content-Type: multipart/form-data
+```
+
+Multipart field:
+
+```text
+file
+```
+
+Current importer:
+
+```text
+supports comma or semicolon CSV
+uses RSD from the supplier default currency
+creates/updates supplier_product rows
+stores supplier_price_snapshot rows when price is present
+stores supplier_import_issue rows for missing required fields or missing price
+does not update Mega Bike inventory
+does not auto-create internal products
+```
+
+Recognized CSV header aliases:
+
+```text
+supplier code: supplier_code, suppliercode, sifra, šifra, code, sku, artikal_sifra
+name:          name, naziv, product_name, supplier_product_name, artikal, opis
+barcode:       barcode, bar_code, ean, barkod
+brand:         brand, brend, proizvodjac, proizvođač
+category:      category, kategorija, grupa
+price:         purchase_price, price, cena, cijena, nabavna_cena, veleprodajna_cena
+availability:  available_quantity, stock, stanje, lager, kolicina, količina
+description:   description, opis, detaljan_opis
+image URL:     image_url, image, slika, slika_url
+```
+
+Import response includes:
+
+```text
+status
+totalRows
+createdSupplierProducts
+updatedSupplierProducts
+priceSnapshots
+issuesCount
+sha256Hash
+uploadedBy
+```
+
+Import review endpoints:
+
+```text
+GET /api/internal/suppliers/{supplierId}/imports
+GET /api/internal/supplier-imports/{importRunId}
+GET /api/internal/supplier-imports/{importRunId}/issues
+```
 
 When the Spring `dev` profile is active, Liquibase loads mock users.
 

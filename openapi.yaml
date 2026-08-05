@@ -13,6 +13,7 @@ info:
     - Category CRUD endpoints are implemented.
     - Product CRUD and paged product listing/search endpoints are implemented.
     - Inventory listing, product inventory lookup, movement history, and manual stock adjustment endpoints are implemented.
+    - Supplier CRUD, supplier-product mapping, and Planet Bike downloaded CSV import endpoints are implemented.
     - JWT access tokens are created on login.
     - Incoming bearer-token validation is implemented.
     - Local Docker PostgreSQL is exposed on localhost:5433.
@@ -26,6 +27,8 @@ tags:
     description: Catalog endpoints
   - name: Inventory
     description: Inventory and stock endpoints
+  - name: Suppliers
+    description: Supplier and supplier import endpoints
 paths:
   /api/auth/login:
     post:
@@ -853,6 +856,426 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  /api/internal/suppliers:
+    post:
+      tags:
+        - Suppliers
+      summary: Create supplier
+      operationId: createSupplier
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SupplierRequest'
+      responses:
+        '200':
+          description: Supplier created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupplierResponse'
+        '400':
+          description: Request body validation failed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Missing SUPPLIER_MANAGE authority.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Supplier code already exists.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    get:
+      tags:
+        - Suppliers
+      summary: List suppliers
+      operationId: listSuppliers
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Suppliers ordered by name.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SupplierResponse'
+        '403':
+          description: Missing SUPPLIER_MANAGE authority.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/internal/suppliers/{id}:
+    get:
+      tags:
+        - Suppliers
+      summary: Get supplier
+      operationId: getSupplier
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Supplier.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupplierResponse'
+        '404':
+          description: Supplier was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags:
+        - Suppliers
+      summary: Update supplier
+      operationId: updateSupplier
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SupplierRequest'
+      responses:
+        '200':
+          description: Supplier updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupplierResponse'
+        '400':
+          description: Request body validation failed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Supplier was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Supplier code already exists.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/internal/supplier-products:
+    post:
+      tags:
+        - Suppliers
+      summary: Create supplier product
+      operationId: createSupplierProduct
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SupplierProductRequest'
+      responses:
+        '200':
+          description: Supplier product created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupplierProductResponse'
+        '400':
+          description: Request body validation failed or linked internal product was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Missing SUPPLIER_MANAGE authority.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Supplier product code already exists for this supplier.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    get:
+      tags:
+        - Suppliers
+      summary: List supplier products
+      operationId: listSupplierProducts
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: supplierId
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - name: query
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: active
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: Paged supplier products.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupplierProductPageResponse'
+        '403':
+          description: Missing SUPPLIER_MANAGE authority.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/internal/supplier-products/{id}:
+    get:
+      tags:
+        - Suppliers
+      summary: Get supplier product
+      operationId: getSupplierProduct
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Supplier product.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupplierProductResponse'
+        '404':
+          description: Supplier product was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      tags:
+        - Suppliers
+      summary: Update supplier product
+      operationId: updateSupplierProduct
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SupplierProductRequest'
+      responses:
+        '200':
+          description: Supplier product updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupplierProductResponse'
+        '400':
+          description: Request body validation failed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Supplier product was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Supplier product code already exists for this supplier.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/internal/suppliers/{supplierId}/imports:
+    post:
+      tags:
+        - Suppliers
+      summary: Import downloaded Planet Bike Lager Lista CSV
+      description: Uploads a CSV previously downloaded from Planet Bike B2B documents. The backend imports supplier availability and price snapshots; it does not download from Planet Bike automatically and does not update Mega Bike inventory.
+      operationId: importSupplierCsv
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: supplierId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Import run completed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupplierImportRunResponse'
+        '400':
+          description: File is empty, unsupported supplier, or CSV could not be parsed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Missing SUPPLIER_MANAGE authority.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    get:
+      tags:
+        - Suppliers
+      summary: List supplier import runs
+      operationId: listSupplierImports
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: supplierId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Supplier import runs ordered newest first.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SupplierImportRunResponse'
+  /api/internal/supplier-imports/{importRunId}:
+    get:
+      tags:
+        - Suppliers
+      summary: Get supplier import run
+      operationId: getSupplierImport
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: importRunId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Supplier import run.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupplierImportRunResponse'
+        '404':
+          description: Supplier import was not found.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/internal/supplier-imports/{importRunId}/issues:
+    get:
+      tags:
+        - Suppliers
+      summary: List supplier import issues
+      operationId: listSupplierImportIssues
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: importRunId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Supplier import issues ordered by CSV row number.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SupplierImportIssueResponse'
 components:
   securitySchemes:
     bearerAuth:
@@ -1439,6 +1862,313 @@ components:
         last:
           type: boolean
           example: true
+    SupplierRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - code
+        - name
+        - defaultCurrency
+        - active
+      properties:
+        code:
+          type: string
+          maxLength: 50
+          example: PLANET_BIKE
+        name:
+          type: string
+          maxLength: 200
+          example: Planet Bike
+        publicUrl:
+          type: string
+          maxLength: 500
+          nullable: true
+          example: https://planetbike.rs/
+        b2bUrl:
+          type: string
+          maxLength: 500
+          nullable: true
+          example: https://planetbike-b2b.rs/dashboard/documents
+        defaultCurrency:
+          type: string
+          pattern: '^[A-Z]{3}$'
+          example: RSD
+        active:
+          type: boolean
+          example: true
+    SupplierResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - code
+        - name
+        - defaultCurrency
+        - active
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+          example: PLANET_BIKE
+        name:
+          type: string
+          example: Planet Bike
+        publicUrl:
+          type: string
+          nullable: true
+        b2bUrl:
+          type: string
+          nullable: true
+        defaultCurrency:
+          type: string
+          example: RSD
+        active:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
+    SupplierProductRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - supplierId
+        - supplierCode
+        - supplierProductName
+        - active
+      properties:
+        supplierId:
+          type: string
+          format: uuid
+        productId:
+          type: string
+          format: uuid
+          nullable: true
+        supplierCode:
+          type: string
+          maxLength: 120
+          example: PB-123
+        supplierBarcode:
+          type: string
+          maxLength: 80
+          nullable: true
+        supplierProductName:
+          type: string
+          maxLength: 300
+          example: Planet Bike Product
+        brandName:
+          type: string
+          maxLength: 160
+          nullable: true
+        categoryText:
+          type: string
+          maxLength: 300
+          nullable: true
+        description:
+          type: string
+          maxLength: 4000
+          nullable: true
+        imageUrl:
+          type: string
+          maxLength: 1000
+          nullable: true
+        active:
+          type: boolean
+          example: true
+    SupplierProductResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - supplierId
+        - supplierCode
+        - supplierName
+        - supplierProductName
+        - active
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        supplierId:
+          type: string
+          format: uuid
+        supplierCode:
+          type: string
+        supplierName:
+          type: string
+        productId:
+          type: string
+          format: uuid
+          nullable: true
+        productCode:
+          type: string
+          nullable: true
+        productName:
+          type: string
+          nullable: true
+        supplierBarcode:
+          type: string
+          nullable: true
+        supplierProductName:
+          type: string
+        brandName:
+          type: string
+          nullable: true
+        categoryText:
+          type: string
+          nullable: true
+        description:
+          type: string
+          nullable: true
+        imageUrl:
+          type: string
+          nullable: true
+        active:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
+    SupplierProductPageResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - content
+        - page
+        - size
+        - totalElements
+        - totalPages
+        - first
+        - last
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/SupplierProductResponse'
+        page:
+          type: integer
+          example: 0
+        size:
+          type: integer
+          example: 20
+        totalElements:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+        first:
+          type: boolean
+        last:
+          type: boolean
+    SupplierImportRunResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - supplierId
+        - supplierCode
+        - supplierName
+        - sourceType
+        - status
+        - originalFilename
+        - sha256Hash
+        - uploadedBy
+        - startedAt
+        - finishedAt
+        - totalRows
+        - createdSupplierProducts
+        - updatedSupplierProducts
+        - priceSnapshots
+        - issuesCount
+      properties:
+        id:
+          type: string
+          format: uuid
+        supplierId:
+          type: string
+          format: uuid
+        supplierCode:
+          type: string
+          example: PLANET_BIKE
+        supplierName:
+          type: string
+          example: Planet Bike
+        sourceType:
+          type: string
+          enum:
+            - CSV_UPLOAD
+        status:
+          type: string
+          enum:
+            - COMPLETED
+            - COMPLETED_WITH_ISSUES
+            - FAILED
+        originalFilename:
+          type: string
+        contentType:
+          type: string
+          nullable: true
+        sha256Hash:
+          type: string
+        uploadedBy:
+          type: string
+          example: manager@megabike.local
+        startedAt:
+          type: string
+          format: date-time
+        finishedAt:
+          type: string
+          format: date-time
+        totalRows:
+          type: integer
+        createdSupplierProducts:
+          type: integer
+        updatedSupplierProducts:
+          type: integer
+        priceSnapshots:
+          type: integer
+        issuesCount:
+          type: integer
+    SupplierImportIssueResponse:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - importRunId
+        - rowNumber
+        - code
+        - message
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        importRunId:
+          type: string
+          format: uuid
+        rowNumber:
+          type: integer
+        code:
+          type: string
+          example: SUPPLIER_IMPORT_REQUIRED_FIELDS_MISSING
+        message:
+          type: string
+        rawRow:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
     ErrorResponse:
       type: object
       additionalProperties: false

@@ -9,4 +9,5 @@
     <include file="db/changelog/catalog/001-create-categories.xml"/>
     <include file="db/changelog/catalog/003-create-products.xml"/>
     <include file="db/changelog/inventory/001-create-inventory-tables.xml"/>
+    <include file="db/changelog/supplier/001-create-supplier-tables.xml"/>
 </databaseChangeLog>

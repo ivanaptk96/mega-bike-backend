@@ -17,6 +17,8 @@ public interface ProductRepository extends JpaRepository<Product, UUID>, JpaSpec
 
 	boolean existsByBarcodeAndIdNot(String barcode, UUID id);
 
+	Optional<Product> findByBarcode(String barcode);
+
 	@EntityGraph(attributePaths = "category")
 	Optional<Product> findWithCategoryById(UUID id);
 }

@@ -75,6 +75,23 @@ GET  /api/internal/inventory/products/{productId}/movements
 POST /api/internal/inventory/adjustments
 ```
 
+Suppliers:
+
+```text
+POST /api/internal/suppliers
+GET  /api/internal/suppliers
+GET  /api/internal/suppliers/{id}
+PUT  /api/internal/suppliers/{id}
+POST /api/internal/supplier-products
+GET  /api/internal/supplier-products
+GET  /api/internal/supplier-products/{id}
+PUT  /api/internal/supplier-products/{id}
+POST /api/internal/suppliers/{supplierId}/imports
+GET  /api/internal/suppliers/{supplierId}/imports
+GET  /api/internal/supplier-imports/{importRunId}
+GET  /api/internal/supplier-imports/{importRunId}/issues
+```
+
 ## Product Listing Filters
 
 `GET /api/internal/products` supports optional filters:
@@ -165,7 +182,7 @@ Important assumptions:
 
 - There is no delete endpoint yet.
 - Product images are not implemented yet.
-- Supplier-specific product codes are not modeled separately yet.
+- Supplier-specific product codes are modeled through supplier products.
 - Prices are sent as decimal numbers, not strings.
 - `retailPriceIncludesVat` should usually be `true`.
 - The only supported product unit is currently `PIECE`.
@@ -237,6 +254,45 @@ GET /api/internal/inventory/products/50000000-0000-0000-0000-000000000001/moveme
 
 Movement list responses are paged and ordered by newest movement first.
 
+## Supplier Notes
+
+Current first supplier target:
+
+```text
+Planet Bike
+```
+
+Dev supplier:
+
+```text
+80000000-0000-0000-0000-000000000001
+PLANET_BIKE
+RSD
+```
+
+Planet Bike Lager Lista import:
+
+```http
+POST /api/internal/suppliers/80000000-0000-0000-0000-000000000001/imports
+Content-Type: multipart/form-data
+```
+
+Multipart field:
+
+```text
+file
+```
+
+Import rules:
+
+```text
+CSV can use comma or semicolon delimiter.
+Supplier stock is supplier availability, not Mega Bike inventory.
+Import does not create inventory movements.
+Import does not auto-create internal products.
+Imported supplier products can remain unlinked with productId = null.
+```
+
 ## Permissions
 
 Read access:
@@ -251,6 +307,7 @@ Create/update access:
 ```text
 PRODUCT_WRITE
 STOCK_ADJUST
+SUPPLIER_MANAGE
 ```
 
 Current dev behavior:

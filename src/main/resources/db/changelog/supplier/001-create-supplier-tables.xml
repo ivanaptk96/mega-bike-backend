@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="001-create-supplier" author="codex">
+        <createTable tableName="supplier">
+            <column name="id" type="uuid">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_supplier"/>
+            </column>
+            <column name="code" type="varchar(50)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uk_supplier_code"/>
+            </column>
+            <column name="name" type="varchar(200)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="public_url" type="varchar(500)"/>
+            <column name="b2b_url" type="varchar(500)"/>
+            <column name="default_currency" type="varchar(3)" defaultValue="RSD">
+                <constraints nullable="false"/>
+            </column>
+            <column name="active" type="boolean" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp with time zone">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="timestamp with time zone"/>
+            <column name="version" type="bigint" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="002-create-supplier-product" author="codex">
+        <createTable tableName="supplier_product">
+            <column name="id" type="uuid">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_supplier_product"/>
+            </column>
+            <column name="supplier_id" type="uuid">
+                <constraints nullable="false"/>
+            </column>
+            <column name="product_id" type="uuid"/>
+            <column name="supplier_code" type="varchar(120)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="supplier_barcode" type="varchar(80)"/>
+            <column name="supplier_product_name" type="varchar(300)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="brand_name" type="varchar(160)"/>
+            <column name="category_text" type="varchar(300)"/>
+            <column name="description" type="varchar(4000)"/>
+            <column name="image_url" type="varchar(1000)"/>
+            <column name="active" type="boolean" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_at" type="timestamp with time zone">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="timestamp with time zone"/>
+            <column name="version" type="bigint" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addUniqueConstraint tableName="supplier_product"
+                             columnNames="supplier_id, supplier_code"
+                             constraintName="uk_supplier_product_supplier_code"/>
+        <addForeignKeyConstraint baseTableName="supplier_product"
+                                 baseColumnNames="supplier_id"
+                                 constraintName="fk_supplier_product_supplier"
+                                 referencedTableName="supplier"
+                                 referencedColumnNames="id"
+                                 onDelete="RESTRICT"/>
+        <addForeignKeyConstraint baseTableName="supplier_product"
+                                 baseColumnNames="product_id"
+                                 constraintName="fk_supplier_product_product"
+                                 referencedTableName="product"
+                                 referencedColumnNames="id"
+                                 onDelete="SET NULL"/>
+
+        <createIndex tableName="supplier_product" indexName="ix_supplier_product_supplier_id">
+            <column name="supplier_id"/>
+        </createIndex>
+        <createIndex tableName="supplier_product" indexName="ix_supplier_product_product_id">
+            <column name="product_id"/>
+        </createIndex>
+        <createIndex tableName="supplier_product" indexName="ix_supplier_product_barcode">
+            <column name="supplier_barcode"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="003-create-supplier-import-run" author="codex">
+        <createTable tableName="supplier_import_run">
+            <column name="id" type="uuid">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_supplier_import_run"/>
+            </column>
+            <column name="supplier_id" type="uuid">
+                <constraints nullable="false"/>
+            </column>
+            <column name="source_type" type="varchar(40)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="varchar(40)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="original_filename" type="varchar(300)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="content_type" type="varchar(120)"/>
+            <column name="sha256_hash" type="varchar(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="uploaded_by" type="varchar(320)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="started_at" type="timestamp with time zone">
+                <constraints nullable="false"/>
+            </column>
+            <column name="finished_at" type="timestamp with time zone">
+                <constraints nullable="false"/>
+            </column>
+            <column name="total_rows" type="integer" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created_supplier_products" type="integer" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_supplier_products" type="integer" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="price_snapshots" type="integer" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="issues_count" type="integer" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="supplier_import_run"
+                                 baseColumnNames="supplier_id"
+                                 constraintName="fk_supplier_import_run_supplier"
+                                 referencedTableName="supplier"
+                                 referencedColumnNames="id"
+                                 onDelete="RESTRICT"/>
+    </changeSet>
+
+    <changeSet id="004-create-supplier-import-issue" author="codex">
+        <createTable tableName="supplier_import_issue">
+            <column name="id" type="uuid">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_supplier_import_issue"/>
+            </column>
+            <column name="import_run_id" type="uuid">
+                <constraints nullable="false"/>
+            </column>
+            <column name="row_number" type="integer">
+                <constraints nullable="false"/>
+            </column>
+            <column name="code" type="varchar(80)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="message" type="varchar(500)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="raw_row" type="varchar(4000)"/>
+            <column name="created_at" type="timestamp with time zone">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="supplier_import_issue"
+                                 baseColumnNames="import_run_id"
+                                 constraintName="fk_supplier_import_issue_run"
+                                 referencedTableName="supplier_import_run"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+    </changeSet>
+
+    <changeSet id="005-create-supplier-price-snapshot" author="codex">
+        <createTable tableName="supplier_price_snapshot">
+            <column name="id" type="uuid">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_supplier_price_snapshot"/>
+            </column>
+            <column name="supplier_product_id" type="uuid">
+                <constraints nullable="false"/>
+            </column>
+            <column name="import_run_id" type="uuid">
+                <constraints nullable="false"/>
+            </column>
+            <column name="purchase_price" type="numeric(12, 2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="currency" type="varchar(3)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="vat_included" type="boolean" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="available_quantity" type="numeric(12, 3)"/>
+            <column name="captured_at" type="timestamp with time zone">
+                <constraints nullable="false"/>
+            </column>
+            <column name="source" type="varchar(120)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="supplier_price_snapshot"
+                                 baseColumnNames="supplier_product_id"
+                                 constraintName="fk_supplier_price_snapshot_supplier_product"
+                                 referencedTableName="supplier_product"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <addForeignKeyConstraint baseTableName="supplier_price_snapshot"
+                                 baseColumnNames="import_run_id"
+                                 constraintName="fk_supplier_price_snapshot_import_run"
+                                 referencedTableName="supplier_import_run"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+    </changeSet>
+</databaseChangeLog>

@@ -7,6 +7,11 @@ import com.megabike.identity.domain.UserAccountRepository;
 import com.megabike.inventory.domain.InventoryItemRepository;
 import com.megabike.inventory.domain.StockLocationRepository;
 import com.megabike.inventory.domain.StockMovementRepository;
+import com.megabike.supplier.domain.SupplierImportIssueRepository;
+import com.megabike.supplier.domain.SupplierImportRunRepository;
+import com.megabike.supplier.domain.SupplierPriceSnapshotRepository;
+import com.megabike.supplier.domain.SupplierProductRepository;
+import com.megabike.supplier.domain.SupplierRepository;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -60,6 +65,31 @@ class MegaBikeBackendApplicationTests {
 		@Bean
 		StockMovementRepository stockMovementRepository() {
 			return Mockito.mock(StockMovementRepository.class);
+		}
+
+		@Bean
+		SupplierRepository supplierRepository() {
+			return Mockito.mock(SupplierRepository.class);
+		}
+
+		@Bean
+		SupplierProductRepository supplierProductRepository() {
+			return Mockito.mock(SupplierProductRepository.class);
+		}
+
+		@Bean
+		SupplierImportRunRepository supplierImportRunRepository() {
+			return Mockito.mock(SupplierImportRunRepository.class);
+		}
+
+		@Bean
+		SupplierImportIssueRepository supplierImportIssueRepository() {
+			return Mockito.mock(SupplierImportIssueRepository.class);
+		}
+
+		@Bean
+		SupplierPriceSnapshotRepository supplierPriceSnapshotRepository() {
+			return Mockito.mock(SupplierPriceSnapshotRepository.class);
 		}
 	}
 

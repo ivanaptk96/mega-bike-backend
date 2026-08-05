@@ -1173,6 +1173,316 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "Suppliers",
+      "item": [
+        {
+          "name": "List Suppliers",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Suppliers returned\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Response is an array\", function () {",
+                  "    pm.expect(pm.response.json()).to.be.an(\"array\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/internal/suppliers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "internal",
+                "suppliers"
+              ]
+            },
+            "description": "Lists suppliers. Run Login - Admin or Login - Manager first."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Planet Bike Supplier",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Planet Bike returned\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const response = pm.response.json();",
+                  "pm.test(\"Supplier code is PLANET_BIKE\", function () {",
+                  "    pm.expect(response.code).to.eql(\"PLANET_BIKE\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/internal/suppliers/{{planetBikeSupplierId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "internal",
+                "suppliers",
+                "{{planetBikeSupplierId}}"
+              ]
+            },
+            "description": "Gets the dev Planet Bike supplier seed."
+          },
+          "response": []
+        },
+        {
+          "name": "List Supplier Products",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Supplier products returned\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"Response is paged\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.content).to.be.an(\"array\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/internal/supplier-products?supplierId={{planetBikeSupplierId}}&page=0&size=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "internal",
+                "supplier-products"
+              ],
+              "query": [
+                {
+                  "key": "supplierId",
+                  "value": "{{planetBikeSupplierId}}"
+                },
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Lists supplier product mappings for Planet Bike."
+          },
+          "response": []
+        },
+        {
+          "name": "Import Downloaded Planet Bike Lager Lista CSV",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"CSV import completed\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "const response = pm.response.json();",
+                  "pm.collectionVariables.set(\"supplierImportRunId\", response.id);",
+                  "pm.test(\"Import run id is present\", function () {",
+                  "    pm.expect(response.id).to.be.a(\"string\").and.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/internal/suppliers/{{planetBikeSupplierId}}/imports",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "internal",
+                "suppliers",
+                "{{planetBikeSupplierId}}",
+                "imports"
+              ]
+            },
+            "description": "Imports a CSV file that you already downloaded from Planet Bike B2B Documents. Select the downloaded Lager Lista CSV in the file field."
+          },
+          "response": []
+        },
+        {
+          "name": "List Planet Bike Import Runs",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Import runs returned\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/internal/suppliers/{{planetBikeSupplierId}}/imports",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "internal",
+                "suppliers",
+                "{{planetBikeSupplierId}}",
+                "imports"
+              ]
+            },
+            "description": "Lists previous import runs for Planet Bike."
+          },
+          "response": []
+        },
+        {
+          "name": "List Supplier Import Issues",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Import issues returned\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/internal/supplier-imports/{{supplierImportRunId}}/issues",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "internal",
+                "supplier-imports",
+                "{{supplierImportRunId}}",
+                "issues"
+              ]
+            },
+            "description": "Lists row-level issues for the supplier import run stored by the import request."
+          },
+          "response": []
+        }
+      ]
     }
   ],
   "variable": [
@@ -1234,6 +1544,16 @@
     {
       "key": "devProductId",
       "value": "50000000-0000-0000-0000-000000000001",
+      "type": "string"
+    },
+    {
+      "key": "planetBikeSupplierId",
+      "value": "80000000-0000-0000-0000-000000000001",
+      "type": "string"
+    },
+    {
+      "key": "supplierImportRunId",
+      "value": "",
       "type": "string"
     }
   ]
