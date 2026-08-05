@@ -1,0 +1,175 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="001-create-sef-connection" author="codex">
+        <createTable tableName="sef_connection">
+            <column name="id" type="uuid">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_sef_connection"/>
+            </column>
+            <column name="company_tax_id" type="varchar(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="company_registration_number" type="varchar(30)"/>
+            <column name="company_name" type="varchar(240)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="api_key_secret" type="varchar(1000)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="enabled" type="boolean" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_purchase_sync_at" type="timestamp with time zone"/>
+            <column name="created_at" type="timestamp with time zone">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="timestamp with time zone"/>
+            <column name="version" type="bigint" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addUniqueConstraint tableName="sef_connection"
+                             columnNames="company_tax_id"
+                             constraintName="uk_sef_connection_company_tax_id"/>
+    </changeSet>
+
+    <changeSet id="002-create-sef-invoice" author="codex">
+        <createTable tableName="sef_invoice">
+            <column name="id" type="uuid">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_sef_invoice"/>
+            </column>
+            <column name="connection_id" type="uuid">
+                <constraints nullable="false"/>
+            </column>
+            <column name="sef_invoice_id" type="bigint">
+                <constraints nullable="false"/>
+            </column>
+            <column name="direction" type="varchar(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="global_unique_id" type="varchar(120)"/>
+            <column name="cir_invoice_id" type="varchar(120)"/>
+            <column name="invoice_number" type="varchar(200)"/>
+            <column name="document_type" type="varchar(80)"/>
+            <column name="status" type="varchar(80)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="counterparty_name" type="varchar(500)"/>
+            <column name="counterparty_registration_number" type="varchar(40)"/>
+            <column name="counterparty_vat_registration_number" type="varchar(40)"/>
+            <column name="currency" type="varchar(3)"/>
+            <column name="amount_without_vat" type="numeric(14, 2)"/>
+            <column name="vat_amount" type="numeric(14, 2)"/>
+            <column name="total_amount" type="numeric(14, 2)"/>
+            <column name="sent_at" type="timestamp with time zone"/>
+            <column name="due_at" type="timestamp with time zone"/>
+            <column name="imported_at" type="timestamp with time zone">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="timestamp with time zone"/>
+            <column name="version" type="bigint" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="sef_invoice"
+                                 baseColumnNames="connection_id"
+                                 constraintName="fk_sef_invoice_connection"
+                                 referencedTableName="sef_connection"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <addUniqueConstraint tableName="sef_invoice"
+                             columnNames="connection_id, direction, sef_invoice_id"
+                             constraintName="uk_sef_invoice_external_id"/>
+        <createIndex tableName="sef_invoice" indexName="ix_sef_invoice_status">
+            <column name="status"/>
+        </createIndex>
+        <createIndex tableName="sef_invoice" indexName="ix_sef_invoice_counterparty">
+            <column name="counterparty_name"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="003-create-sef-invoice-document" author="codex">
+        <createTable tableName="sef_invoice_document">
+            <column name="id" type="uuid">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_sef_invoice_document"/>
+            </column>
+            <column name="invoice_id" type="uuid">
+                <constraints nullable="false"/>
+            </column>
+            <column name="document_type" type="varchar(40)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="filename" type="varchar(300)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="content_type" type="varchar(120)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="sha256_hash" type="varchar(64)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="content" type="bytea">
+                <constraints nullable="false"/>
+            </column>
+            <column name="downloaded_at" type="timestamp with time zone">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="sef_invoice_document"
+                                 baseColumnNames="invoice_id"
+                                 constraintName="fk_sef_invoice_document_invoice"
+                                 referencedTableName="sef_invoice"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <addUniqueConstraint tableName="sef_invoice_document"
+                             columnNames="invoice_id, document_type"
+                             constraintName="uk_sef_invoice_document_type"/>
+        <createIndex tableName="sef_invoice_document" indexName="ix_sef_invoice_document_invoice">
+            <column name="invoice_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="004-create-sef-sync-run" author="codex">
+        <createTable tableName="sef_sync_run">
+            <column name="id" type="uuid">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_sef_sync_run"/>
+            </column>
+            <column name="connection_id" type="uuid">
+                <constraints nullable="false"/>
+            </column>
+            <column name="direction" type="varchar(20)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="varchar(30)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="date_from" type="timestamp with time zone"/>
+            <column name="date_to" type="timestamp with time zone"/>
+            <column name="started_at" type="timestamp with time zone">
+                <constraints nullable="false"/>
+            </column>
+            <column name="finished_at" type="timestamp with time zone"/>
+            <column name="invoice_count" type="integer" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="document_count" type="integer" defaultValueNumeric="0">
+                <constraints nullable="false"/>
+            </column>
+            <column name="error_message" type="varchar(1000)"/>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="sef_sync_run"
+                                 baseColumnNames="connection_id"
+                                 constraintName="fk_sef_sync_run_connection"
+                                 referencedTableName="sef_connection"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+    </changeSet>
+</databaseChangeLog>

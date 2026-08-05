@@ -87,6 +87,8 @@ public class SupplierService {
 				UUID.randomUUID(),
 				code,
 				normalizeRequired(request.name()),
+				normalizeOptional(request.registrationNumber()),
+				normalizeOptional(request.vatRegistrationNumber()),
 				normalizeOptional(request.publicUrl()),
 				normalizeOptional(request.b2bUrl()),
 				normalizeCode(request.defaultCurrency()),
@@ -118,6 +120,8 @@ public class SupplierService {
 		supplier.update(
 				code,
 				normalizeRequired(request.name()),
+				normalizeOptional(request.registrationNumber()),
+				normalizeOptional(request.vatRegistrationNumber()),
 				normalizeOptional(request.publicUrl()),
 				normalizeOptional(request.b2bUrl()),
 				normalizeCode(request.defaultCurrency()),
@@ -504,7 +508,19 @@ public class SupplierService {
 	}
 
 	private SupplierResponse toSupplierResponse(Supplier supplier) {
-		return new SupplierResponse(supplier.getId(), supplier.getCode(), supplier.getName(), supplier.getPublicUrl(), supplier.getB2bUrl(), supplier.getDefaultCurrency(), supplier.isActive(), supplier.getCreatedAt(), supplier.getUpdatedAt());
+		return new SupplierResponse(
+				supplier.getId(),
+				supplier.getCode(),
+				supplier.getName(),
+				supplier.getRegistrationNumber(),
+				supplier.getVatRegistrationNumber(),
+				supplier.getPublicUrl(),
+				supplier.getB2bUrl(),
+				supplier.getDefaultCurrency(),
+				supplier.isActive(),
+				supplier.getCreatedAt(),
+				supplier.getUpdatedAt()
+		);
 	}
 
 	private SupplierProductResponse toSupplierProductResponse(SupplierProduct supplierProduct) {

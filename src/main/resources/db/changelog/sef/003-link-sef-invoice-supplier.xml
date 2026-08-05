@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="001-add-sef-invoice-supplier-link" author="codex">
+        <addColumn tableName="sef_invoice">
+            <column name="supplier_id" type="uuid"/>
+        </addColumn>
+
+        <addForeignKeyConstraint baseTableName="sef_invoice"
+                                 baseColumnNames="supplier_id"
+                                 constraintName="fk_sef_invoice_supplier"
+                                 referencedTableName="supplier"
+                                 referencedColumnNames="id"
+                                 onDelete="SET NULL"/>
+        <createIndex tableName="sef_invoice" indexName="ix_sef_invoice_supplier">
+            <column name="supplier_id"/>
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>

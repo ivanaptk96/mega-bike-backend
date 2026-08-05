@@ -23,6 +23,12 @@ public class Supplier {
 	@Column(name = "name", nullable = false, length = 200)
 	private String name;
 
+	@Column(name = "registration_number", length = 40)
+	private String registrationNumber;
+
+	@Column(name = "vat_registration_number", length = 40)
+	private String vatRegistrationNumber;
+
 	@Column(name = "public_url", length = 500)
 	private String publicUrl;
 
@@ -49,9 +55,15 @@ public class Supplier {
 	}
 
 	public Supplier(UUID id, String code, String name, String publicUrl, String b2bUrl, String defaultCurrency, boolean active, Instant createdAt) {
+		this(id, code, name, null, null, publicUrl, b2bUrl, defaultCurrency, active, createdAt);
+	}
+
+	public Supplier(UUID id, String code, String name, String registrationNumber, String vatRegistrationNumber, String publicUrl, String b2bUrl, String defaultCurrency, boolean active, Instant createdAt) {
 		this.id = id;
 		this.code = code;
 		this.name = name;
+		this.registrationNumber = registrationNumber;
+		this.vatRegistrationNumber = vatRegistrationNumber;
 		this.publicUrl = publicUrl;
 		this.b2bUrl = b2bUrl;
 		this.defaultCurrency = defaultCurrency;
@@ -60,8 +72,14 @@ public class Supplier {
 	}
 
 	public void update(String code, String name, String publicUrl, String b2bUrl, String defaultCurrency, boolean active, Instant updatedAt) {
+		update(code, name, this.registrationNumber, this.vatRegistrationNumber, publicUrl, b2bUrl, defaultCurrency, active, updatedAt);
+	}
+
+	public void update(String code, String name, String registrationNumber, String vatRegistrationNumber, String publicUrl, String b2bUrl, String defaultCurrency, boolean active, Instant updatedAt) {
 		this.code = code;
 		this.name = name;
+		this.registrationNumber = registrationNumber;
+		this.vatRegistrationNumber = vatRegistrationNumber;
 		this.publicUrl = publicUrl;
 		this.b2bUrl = b2bUrl;
 		this.defaultCurrency = defaultCurrency;
@@ -72,6 +90,8 @@ public class Supplier {
 	public UUID getId() { return id; }
 	public String getCode() { return code; }
 	public String getName() { return name; }
+	public String getRegistrationNumber() { return registrationNumber; }
+	public String getVatRegistrationNumber() { return vatRegistrationNumber; }
 	public String getPublicUrl() { return publicUrl; }
 	public String getB2bUrl() { return b2bUrl; }
 	public String getDefaultCurrency() { return defaultCurrency; }

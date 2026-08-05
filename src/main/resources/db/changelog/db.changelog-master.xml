@@ -10,4 +10,8 @@
     <include file="db/changelog/catalog/003-create-products.xml"/>
     <include file="db/changelog/inventory/001-create-inventory-tables.xml"/>
     <include file="db/changelog/supplier/001-create-supplier-tables.xml"/>
+    <include file="db/changelog/supplier/003-add-supplier-identifiers.xml"/>
+    <include file="db/changelog/sef/001-create-sef-tables.xml"/>
+    <include file="db/changelog/sef/002-expand-sef-invoice-data.xml"/>
+    <include file="db/changelog/sef/003-link-sef-invoice-supplier.xml"/>
 </databaseChangeLog>

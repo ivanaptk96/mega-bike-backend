@@ -14,6 +14,12 @@ public record SupplierRequest(
 		@Size(max = 200)
 		String name,
 
+		@Size(max = 40)
+		String registrationNumber,
+
+		@Size(max = 40)
+		String vatRegistrationNumber,
+
 		@Size(max = 500)
 		String publicUrl,
 

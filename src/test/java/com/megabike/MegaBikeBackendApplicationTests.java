@@ -7,6 +7,15 @@ import com.megabike.identity.domain.UserAccountRepository;
 import com.megabike.inventory.domain.InventoryItemRepository;
 import com.megabike.inventory.domain.StockLocationRepository;
 import com.megabike.inventory.domain.StockMovementRepository;
+import com.megabike.sef.domain.SefConnectionRepository;
+import com.megabike.sef.domain.SefInvoiceAttachmentRepository;
+import com.megabike.sef.domain.SefInvoiceDocumentRepository;
+import com.megabike.sef.domain.SefInvoiceLineRepository;
+import com.megabike.sef.domain.SefInvoicePaymentRepository;
+import com.megabike.sef.domain.SefInvoiceRepository;
+import com.megabike.sef.domain.SefInvoiceStatusEventRepository;
+import com.megabike.sef.domain.SefInvoiceVatSummaryRepository;
+import com.megabike.sef.domain.SefSyncRunRepository;
 import com.megabike.supplier.domain.SupplierImportIssueRepository;
 import com.megabike.supplier.domain.SupplierImportRunRepository;
 import com.megabike.supplier.domain.SupplierPriceSnapshotRepository;
@@ -90,6 +99,51 @@ class MegaBikeBackendApplicationTests {
 		@Bean
 		SupplierPriceSnapshotRepository supplierPriceSnapshotRepository() {
 			return Mockito.mock(SupplierPriceSnapshotRepository.class);
+		}
+
+		@Bean
+		SefConnectionRepository sefConnectionRepository() {
+			return Mockito.mock(SefConnectionRepository.class);
+		}
+
+		@Bean
+		SefInvoiceRepository sefInvoiceRepository() {
+			return Mockito.mock(SefInvoiceRepository.class);
+		}
+
+		@Bean
+		SefInvoiceDocumentRepository sefInvoiceDocumentRepository() {
+			return Mockito.mock(SefInvoiceDocumentRepository.class);
+		}
+
+		@Bean
+		SefSyncRunRepository sefSyncRunRepository() {
+			return Mockito.mock(SefSyncRunRepository.class);
+		}
+
+		@Bean
+		SefInvoiceLineRepository sefInvoiceLineRepository() {
+			return Mockito.mock(SefInvoiceLineRepository.class);
+		}
+
+		@Bean
+		SefInvoiceVatSummaryRepository sefInvoiceVatSummaryRepository() {
+			return Mockito.mock(SefInvoiceVatSummaryRepository.class);
+		}
+
+		@Bean
+		SefInvoicePaymentRepository sefInvoicePaymentRepository() {
+			return Mockito.mock(SefInvoicePaymentRepository.class);
+		}
+
+		@Bean
+		SefInvoiceStatusEventRepository sefInvoiceStatusEventRepository() {
+			return Mockito.mock(SefInvoiceStatusEventRepository.class);
+		}
+
+		@Bean
+		SefInvoiceAttachmentRepository sefInvoiceAttachmentRepository() {
+			return Mockito.mock(SefInvoiceAttachmentRepository.class);
 		}
 	}
 

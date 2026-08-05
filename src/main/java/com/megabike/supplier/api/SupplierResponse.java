@@ -7,6 +7,8 @@ public record SupplierResponse(
 		UUID id,
 		String code,
 		String name,
+		String registrationNumber,
+		String vatRegistrationNumber,
 		String publicUrl,
 		String b2bUrl,
 		String defaultCurrency,

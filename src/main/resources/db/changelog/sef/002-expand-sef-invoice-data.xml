@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="001-add-sef-invoice-raw-payload" author="codex">
+        <addColumn tableName="sef_invoice">
+            <column name="raw_payload_json" type="jsonb"/>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="002-create-sef-invoice-line" author="codex">
+        <createTable tableName="sef_invoice_line">
+            <column name="id" type="uuid">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_sef_invoice_line"/>
+            </column>
+            <column name="invoice_id" type="uuid">
+                <constraints nullable="false"/>
+            </column>
+            <column name="line_number" type="integer">
+                <constraints nullable="false"/>
+            </column>
+            <column name="external_line_id" type="varchar(120)"/>
+            <column name="item_name" type="varchar(500)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="item_description" type="varchar(4000)"/>
+            <column name="seller_item_id" type="varchar(120)"/>
+            <column name="buyer_item_id" type="varchar(120)"/>
+            <column name="unit_code" type="varchar(40)"/>
+            <column name="quantity" type="numeric(14, 3)"/>
+            <column name="unit_price" type="numeric(14, 4)"/>
+            <column name="discount_amount" type="numeric(14, 2)"/>
+            <column name="line_amount_without_vat" type="numeric(14, 2)"/>
+            <column name="vat_category" type="varchar(40)"/>
+            <column name="vat_rate" type="numeric(5, 2)"/>
+            <column name="vat_amount" type="numeric(14, 2)"/>
+            <column name="raw_payload_json" type="jsonb"/>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="sef_invoice_line"
+                                 baseColumnNames="invoice_id"
+                                 constraintName="fk_sef_invoice_line_invoice"
+                                 referencedTableName="sef_invoice"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <addUniqueConstraint tableName="sef_invoice_line"
+                             columnNames="invoice_id, line_number"
+                             constraintName="uk_sef_invoice_line_number"/>
+        <createIndex tableName="sef_invoice_line" indexName="ix_sef_invoice_line_invoice">
+            <column name="invoice_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="003-create-sef-invoice-vat-summary" author="codex">
+        <createTable tableName="sef_invoice_vat_summary">
+            <column name="id" type="uuid">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_sef_invoice_vat_summary"/>
+            </column>
+            <column name="invoice_id" type="uuid">
+                <constraints nullable="false"/>
+            </column>
+            <column name="vat_category" type="varchar(40)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="vat_rate" type="numeric(5, 2)"/>
+            <column name="taxable_amount" type="numeric(14, 2)"/>
+            <column name="vat_amount" type="numeric(14, 2)"/>
+            <column name="exemption_reason_code" type="varchar(80)"/>
+            <column name="exemption_reason" type="varchar(500)"/>
+            <column name="raw_payload_json" type="jsonb"/>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="sef_invoice_vat_summary"
+                                 baseColumnNames="invoice_id"
+                                 constraintName="fk_sef_invoice_vat_summary_invoice"
+                                 referencedTableName="sef_invoice"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <createIndex tableName="sef_invoice_vat_summary" indexName="ix_sef_invoice_vat_summary_invoice">
+            <column name="invoice_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="004-create-sef-invoice-payment" author="codex">
+        <createTable tableName="sef_invoice_payment">
+            <column name="id" type="uuid">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_sef_invoice_payment"/>
+            </column>
+            <column name="invoice_id" type="uuid">
+                <constraints nullable="false"/>
+            </column>
+            <column name="payment_means_code" type="varchar(80)"/>
+            <column name="payment_id" type="varchar(120)"/>
+            <column name="account_number" type="varchar(120)"/>
+            <column name="account_name" type="varchar(240)"/>
+            <column name="model_number" type="varchar(20)"/>
+            <column name="reference_number" type="varchar(120)"/>
+            <column name="amount" type="numeric(14, 2)"/>
+            <column name="currency" type="varchar(3)"/>
+            <column name="due_at" type="timestamp with time zone"/>
+            <column name="raw_payload_json" type="jsonb"/>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="sef_invoice_payment"
+                                 baseColumnNames="invoice_id"
+                                 constraintName="fk_sef_invoice_payment_invoice"
+                                 referencedTableName="sef_invoice"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <createIndex tableName="sef_invoice_payment" indexName="ix_sef_invoice_payment_invoice">
+            <column name="invoice_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="005-create-sef-invoice-status-event" author="codex">
+        <createTable tableName="sef_invoice_status_event">
+            <column name="id" type="uuid">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_sef_invoice_status_event"/>
+            </column>
+            <column name="invoice_id" type="uuid">
+                <constraints nullable="false"/>
+            </column>
+            <column name="sef_event_id" type="integer"/>
+            <column name="status" type="varchar(80)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="comment" type="varchar(1000)"/>
+            <column name="event_at" type="timestamp with time zone"/>
+            <column name="subscription_key" type="varchar(120)"/>
+            <column name="raw_payload_json" type="jsonb"/>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="sef_invoice_status_event"
+                                 baseColumnNames="invoice_id"
+                                 constraintName="fk_sef_invoice_status_event_invoice"
+                                 referencedTableName="sef_invoice"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <addUniqueConstraint tableName="sef_invoice_status_event"
+                             columnNames="invoice_id, sef_event_id"
+                             constraintName="uk_sef_invoice_status_event"/>
+        <createIndex tableName="sef_invoice_status_event" indexName="ix_sef_invoice_status_event_invoice">
+            <column name="invoice_id"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="006-create-sef-invoice-attachment" author="codex">
+        <createTable tableName="sef_invoice_attachment">
+            <column name="id" type="uuid">
+                <constraints nullable="false" primaryKey="true" primaryKeyName="pk_sef_invoice_attachment"/>
+            </column>
+            <column name="invoice_id" type="uuid">
+                <constraints nullable="false"/>
+            </column>
+            <column name="sef_attachment_id" type="varchar(120)"/>
+            <column name="filename" type="varchar(300)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="content_type" type="varchar(120)"/>
+            <column name="sha256_hash" type="varchar(64)"/>
+            <column name="content" type="bytea"/>
+            <column name="downloaded_at" type="timestamp with time zone"/>
+            <column name="raw_payload_json" type="jsonb"/>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="sef_invoice_attachment"
+                                 baseColumnNames="invoice_id"
+                                 constraintName="fk_sef_invoice_attachment_invoice"
+                                 referencedTableName="sef_invoice"
+                                 referencedColumnNames="id"
+                                 onDelete="CASCADE"/>
+        <addUniqueConstraint tableName="sef_invoice_attachment"
+                             columnNames="invoice_id, filename"
+                             constraintName="uk_sef_invoice_attachment_filename"/>
+        <createIndex tableName="sef_invoice_attachment" indexName="ix_sef_invoice_attachment_invoice">
+            <column name="invoice_id"/>
+        </createIndex>
+    </changeSet>
+</databaseChangeLog>
