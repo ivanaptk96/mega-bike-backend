@@ -427,7 +427,19 @@ Supplier-code search should come later with supplier product mapping.
 First product list endpoint:
 
 ```text
-GET /api/internal/products?query=&categoryId=&active=
+GET /api/internal/products?query=&categoryId=&active=&page=0&size=20&sort=name&direction=asc
+```
+
+Product list response is paged:
+
+```text
+content
+page
+size
+totalElements
+totalPages
+first
+last
 ```
 
 ## 10. Inventory Boundary

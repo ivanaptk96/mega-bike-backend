@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -33,12 +32,16 @@ public class ProductController {
 
 	@GetMapping
 	@PreAuthorize("hasAuthority('PRODUCT_READ')")
-	public List<ProductResponse> list(
+	public ProductPageResponse list(
 			@RequestParam(required = false) String query,
 			@RequestParam(required = false) UUID categoryId,
-			@RequestParam(required = false) Boolean active
+			@RequestParam(required = false) Boolean active,
+			@RequestParam(defaultValue = "0") int page,
+			@RequestParam(defaultValue = "20") int size,
+			@RequestParam(defaultValue = "name") String sort,
+			@RequestParam(defaultValue = "asc") String direction
 	) {
-		return productService.list(query, categoryId, active);
+		return productService.list(query, categoryId, active, page, size, sort, direction);
 	}
 
 	@GetMapping("/{id}")

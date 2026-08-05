@@ -480,8 +480,10 @@
                   "pm.test(\"Categories returned\", function () {",
                   "    pm.response.to.have.status(200);",
                   "});",
-                  "pm.test(\"Response is an array\", function () {",
-                  "    pm.expect(pm.response.json()).to.be.an(\"array\");",
+                  "pm.test(\"Response is paged\", function () {",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.content).to.be.an(\"array\");",
+                  "    pm.expect(response.page).to.eql(0);",
                   "});"
                 ]
               }
@@ -719,7 +721,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/internal/products?query=helmet&active=true",
+              "raw": "{{baseUrl}}/api/internal/products?query=helmet&active=true&page=0&size=20&sort=name&direction=asc",
               "host": [
                 "{{baseUrl}}"
               ],
@@ -736,10 +738,26 @@
                 {
                   "key": "active",
                   "value": "true"
+                },
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                },
+                {
+                  "key": "sort",
+                  "value": "name"
+                },
+                {
+                  "key": "direction",
+                  "value": "asc"
                 }
               ]
             },
-            "description": "Lists products. Optional query parameters are query, categoryId, and active."
+            "description": "Lists products. Optional query parameters are query, categoryId, active, page, size, sort, and direction."
           },
           "response": []
         },

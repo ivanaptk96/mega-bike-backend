@@ -75,9 +75,12 @@ class ProductIntegrationTests {
 		assertThat(get.status()).isEqualTo(HttpStatus.OK.value());
 		assertThat(get.body().name()).isEqualTo("Trail Pump");
 
-		TestResponse<ProductResponse[]> search = get("/api/internal/products?query=trail&active=true", token, ProductResponse[].class);
+		TestResponse<ProductPageResponse> search = get("/api/internal/products?query=trail&active=true&page=0&size=10", token, ProductPageResponse.class);
 		assertThat(search.status()).isEqualTo(HttpStatus.OK.value());
-		assertThat(search.body()).extracting(ProductResponse::id).contains(create.body().id());
+		assertThat(search.body().content()).extracting(ProductResponse::id).contains(create.body().id());
+		assertThat(search.body().page()).isZero();
+		assertThat(search.body().size()).isEqualTo(10);
+		assertThat(search.body().totalElements()).isPositive();
 
 		ProductRequest updateRequest = productRequest(category.id(), request.productCode(), request.barcode(), "Workshop Trail Pump");
 		TestResponse<ProductResponse> update = put("/api/internal/products/" + create.body().id(), updateRequest, token, ProductResponse.class);
@@ -91,9 +94,9 @@ class ProductIntegrationTests {
 	void employeeCanListButCannotCreateProduct() {
 		String token = login("employee@megabike.local", "password").accessToken();
 
-		TestResponse<ProductResponse[]> list = get("/api/internal/products", token, ProductResponse[].class);
+		TestResponse<ProductPageResponse> list = get("/api/internal/products", token, ProductPageResponse.class);
 		assertThat(list.status()).isEqualTo(HttpStatus.OK.value());
-		assertThat(list.body()).isNotEmpty();
+		assertThat(list.body().content()).isNotEmpty();
 
 		TestResponse<ErrorResponse> create = post(
 				"/api/internal/products",
@@ -153,6 +156,16 @@ class ProductIntegrationTests {
 
 		assertThat(response.status()).isEqualTo(HttpStatus.BAD_REQUEST.value());
 		assertThat(response.body().code()).isEqualTo("PRODUCT_CATEGORY_NOT_FOUND");
+	}
+
+	@Test
+	void listRejectsInvalidPagination() {
+		String token = login("admin@megabike.local", "password").accessToken();
+
+		TestResponse<ErrorResponse> response = get("/api/internal/products?page=-1", token, ErrorResponse.class);
+
+		assertThat(response.status()).isEqualTo(HttpStatus.BAD_REQUEST.value());
+		assertThat(response.body().code()).isEqualTo("INVALID_PAGE_REQUEST");
 	}
 
 	private CategoryResponse createCategory(String token, String name) {

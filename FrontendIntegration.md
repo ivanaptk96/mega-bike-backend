@@ -73,12 +73,16 @@ PUT  /api/internal/products/{id}
 query
 categoryId
 active
+page
+size
+sort
+direction
 ```
 
 Example:
 
 ```http
-GET /api/internal/products?query=helmet&active=true
+GET /api/internal/products?query=helmet&active=true&page=0&size=20&sort=name&direction=asc
 ```
 
 `query` currently searches:
@@ -89,6 +93,38 @@ productCode
 barcode
 brandName
 externalId
+```
+
+Product list responses are paged:
+
+```text
+content
+page
+size
+totalElements
+totalPages
+first
+last
+```
+
+Pagination defaults:
+
+```text
+page       0
+size       20
+sort       name
+direction  asc
+```
+
+Allowed product sort fields:
+
+```text
+name
+productCode
+brandName
+retailPrice
+createdAt
+active
 ```
 
 ## Product Notes
@@ -117,7 +153,6 @@ updatedAt
 
 Important assumptions:
 
-- There is no pagination yet.
 - There is no delete endpoint yet.
 - Product images are not implemented yet.
 - Inventory/stock is not implemented yet.

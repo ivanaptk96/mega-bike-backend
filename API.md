@@ -463,7 +463,7 @@ Missing category:
 
 ### GET /api/internal/products
 
-Lists products ordered by name.
+Lists products with pagination. Default sort is `name,asc`.
 
 Route:
 
@@ -478,13 +478,57 @@ Optional query parameters:
 query       searches name, productCode, barcode, brandName, externalId
 categoryId filters by category UUID
 active     filters active/inactive products
+page       zero-based page number, default 0
+size       page size from 1 to 100, default 20
+sort       one of name, productCode, brandName, retailPrice, createdAt, active
+direction  asc or desc, default asc
 ```
 
 Example:
 
 ```http
-GET /api/internal/products?query=helmet&active=true
+GET /api/internal/products?query=helmet&active=true&page=0&size=20&sort=name&direction=asc
 Authorization: Bearer <accessToken>
+```
+
+Successful response:
+
+```json
+{
+  "content": [
+    {
+      "id": "5fc85194-7bd5-47ab-9251-4ef31fbcb1ad",
+      "productCode": "MB-P-1001",
+      "externalId": "ALG-P-1001",
+      "barcode": "8600000001001",
+      "name": "Trail Helmet M",
+      "description": "Mountain bike helmet, medium.",
+      "brandName": "Mega Bike",
+      "categoryId": "40000000-0000-0000-0000-000000000001",
+      "categoryName": "Bikes",
+      "unit": "PIECE",
+      "purchasePrice": 38.00,
+      "retailPrice": 59.99,
+      "vatRate": 20.00,
+      "retailPriceIncludesVat": true,
+      "active": true,
+      "createdAt": "2026-07-21T18:00:00Z",
+      "updatedAt": null
+    }
+  ],
+  "page": 0,
+  "size": 20,
+  "totalElements": 1,
+  "totalPages": 1,
+  "first": true,
+  "last": true
+}
+```
+
+Invalid pagination or sorting:
+
+```text
+400 INVALID_PAGE_REQUEST
 ```
 
 ### GET /api/internal/products/{id}
