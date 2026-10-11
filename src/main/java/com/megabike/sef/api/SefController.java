@@ -4,6 +4,7 @@ import com.megabike.sef.application.SefIntegrationService;
 import com.megabike.sef.application.SefPurchaseInvoiceSyncService;
 import com.megabike.sef.domain.SefInvoiceDirection;
 import com.megabike.sef.domain.SefSyncRun;
+import com.megabike.supplier.domain.SupplierClassification;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.http.ContentDisposition;
@@ -83,11 +84,14 @@ public class SefController {
 
 	@GetMapping("/connections/{connectionId}/invoices")
 	@PreAuthorize("hasAuthority('SUPPLIER_MANAGE')")
-	public List<SefInvoiceResponse> listInvoices(
+	public SefInvoicePageResponse listInvoices(
 			@PathVariable UUID connectionId,
-			@RequestParam(required = false) SefInvoiceDirection direction
+			@RequestParam(required = false) SefInvoiceDirection direction,
+			@RequestParam(required = false) SupplierClassification classification,
+			@RequestParam(defaultValue = "0") int page,
+			@RequestParam(defaultValue = "10") int size
 	) {
-		return sefIntegrationService.listInvoices(connectionId, direction);
+		return sefIntegrationService.listInvoices(connectionId, direction, classification, page, size);
 	}
 
 	@GetMapping("/suppliers/{supplierId}/invoices")

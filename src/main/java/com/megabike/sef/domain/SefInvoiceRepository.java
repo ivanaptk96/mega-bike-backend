@@ -1,6 +1,7 @@
 package com.megabike.sef.domain;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -8,7 +9,7 @@ import java.util.Optional;
 import java.util.List;
 import java.util.UUID;
 
-public interface SefInvoiceRepository extends JpaRepository<SefInvoice, UUID> {
+public interface SefInvoiceRepository extends JpaRepository<SefInvoice, UUID>, JpaSpecificationExecutor<SefInvoice> {
 
 	Optional<SefInvoice> findByConnectionIdAndDirectionAndSefInvoiceId(UUID connectionId, SefInvoiceDirection direction, Long sefInvoiceId);
 

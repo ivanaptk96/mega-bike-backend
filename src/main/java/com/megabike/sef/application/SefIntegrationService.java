@@ -4,6 +4,7 @@ import com.megabike.sef.api.SefConnectionRequest;
 import com.megabike.sef.api.SefConnectionResponse;
 import com.megabike.sef.api.SefInvoiceDetailResponse;
 import com.megabike.sef.api.SefInvoiceDocumentContent;
+import com.megabike.sef.api.SefInvoicePageResponse;
 import com.megabike.sef.api.SefInvoiceResponse;
 import com.megabike.sef.api.SefSyncRunResponse;
 import com.megabike.sef.domain.SefConnection;
@@ -21,12 +22,21 @@ import com.megabike.sef.domain.SefInvoiceVatSummary;
 import com.megabike.sef.domain.SefInvoiceVatSummaryRepository;
 import com.megabike.sef.domain.SefSyncRun;
 import com.megabike.shared.api.ApiException;
+import com.megabike.supplier.domain.SupplierClassification;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.Predicate;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -110,16 +120,40 @@ public class SefIntegrationService {
 
 	@Transactional(readOnly = true)
 	public List<SefInvoiceResponse> listPurchaseInvoices(UUID connectionId) {
-		return listInvoices(connectionId, SefInvoiceDirection.PURCHASE);
+		findConnection(connectionId);
+		return invoiceRepository.findByConnectionIdAndDirectionOrderBySentAtDescImportedAtDesc(
+				connectionId,
+				SefInvoiceDirection.PURCHASE
+		).stream().map(this::toInvoiceResponse).toList();
 	}
 
 	@Transactional(readOnly = true)
-	public List<SefInvoiceResponse> listInvoices(UUID connectionId, SefInvoiceDirection direction) {
+	public SefInvoicePageResponse listInvoices(
+			UUID connectionId,
+			SefInvoiceDirection direction,
+			SupplierClassification classification,
+			int page,
+			int size
+	) {
 		findConnection(connectionId);
-		List<SefInvoice> invoices = direction == null
-				? invoiceRepository.findByConnectionIdOrderBySentAtDescImportedAtDesc(connectionId)
-				: invoiceRepository.findByConnectionIdAndDirectionOrderBySentAtDescImportedAtDesc(connectionId, direction);
-		return invoices.stream().map(this::toInvoiceResponse).toList();
+		Page<SefInvoiceResponse> invoices = invoiceRepository.findAll(
+				invoiceSpecification(connectionId, direction, classification),
+				PageRequest.of(
+						validatePage(page),
+						validateSize(size),
+						Sort.by(Sort.Order.desc("sentAt"), Sort.Order.desc("importedAt"))
+				)
+		).map(this::toInvoiceResponse);
+
+		return new SefInvoicePageResponse(
+				invoices.getContent(),
+				invoices.getNumber(),
+				invoices.getSize(),
+				invoices.getTotalElements(),
+				invoices.getTotalPages(),
+				invoices.isFirst(),
+				invoices.isLast()
+		);
 	}
 
 	@Transactional(readOnly = true)
@@ -300,6 +334,45 @@ public class SefIntegrationService {
 				document.getSha256Hash(),
 				document.getDownloadedAt()
 		);
+	}
+
+	private Specification<SefInvoice> invoiceSpecification(
+			UUID connectionId,
+			SefInvoiceDirection direction,
+			SupplierClassification classification
+	) {
+		return (root, criteriaQuery, criteriaBuilder) -> {
+			List<Predicate> predicates = new ArrayList<>();
+			predicates.add(criteriaBuilder.equal(root.get("connection").get("id"), connectionId));
+			if (direction != null) {
+				predicates.add(criteriaBuilder.equal(root.get("direction"), direction));
+			}
+			if (classification != null) {
+				Join<Object, Object> supplier = root.join("supplier", JoinType.LEFT);
+				Predicate hasClassification = criteriaBuilder.equal(
+						supplier.get("classification"),
+						classification
+				);
+				predicates.add(classification == SupplierClassification.UNCLASSIFIED
+						? criteriaBuilder.or(criteriaBuilder.isNull(supplier.get("id")), hasClassification)
+						: hasClassification);
+			}
+			return criteriaBuilder.and(predicates.toArray(Predicate[]::new));
+		};
+	}
+
+	private int validatePage(int page) {
+		if (page < 0) {
+			throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_PAGE_REQUEST", "Page must be greater than or equal to 0.");
+		}
+		return page;
+	}
+
+	private int validateSize(int size) {
+		if (size < 1 || size > 100) {
+			throw new ApiException(HttpStatus.BAD_REQUEST, "INVALID_PAGE_REQUEST", "Size must be between 1 and 100.");
+		}
+		return size;
 	}
 
 	private String normalizeRequired(String value) {

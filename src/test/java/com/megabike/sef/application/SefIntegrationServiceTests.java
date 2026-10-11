@@ -2,6 +2,7 @@ package com.megabike.sef.application;
 
 import com.megabike.sef.api.SefInvoiceDetailResponse;
 import com.megabike.sef.api.SefInvoiceDocumentContent;
+import com.megabike.sef.api.SefInvoicePageResponse;
 import com.megabike.sef.domain.SefConnection;
 import com.megabike.sef.domain.SefConnectionRepository;
 import com.megabike.sef.domain.SefInvoice;
@@ -16,6 +17,7 @@ import com.megabike.sef.domain.SefInvoicePaymentRepository;
 import com.megabike.sef.domain.SefInvoiceRepository;
 import com.megabike.sef.domain.SefInvoiceVatSummary;
 import com.megabike.sef.domain.SefInvoiceVatSummaryRepository;
+import com.megabike.shared.api.ApiException;
 import com.megabike.supplier.domain.Supplier;
 import com.megabike.supplier.domain.SupplierClassification;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,6 +25,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -32,6 +38,9 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
@@ -180,5 +189,42 @@ class SefIntegrationServiceTests {
 		assertEquals(1, response.size());
 		assertEquals(connectionId, response.getFirst().connectionId());
 		assertEquals(invoiceId, response.getFirst().id());
+	}
+
+	@Test
+	void listsFilteredInvoicesAsAPage() {
+		when(invoiceRepository.findAll(
+				org.mockito.ArgumentMatchers.<Specification<SefInvoice>>any(),
+				any(Pageable.class)
+		))
+				.thenReturn(new PageImpl<>(List.of(invoice), PageRequest.of(1, 10), 21));
+
+		SefInvoicePageResponse response = service.listInvoices(
+				connectionId,
+				SefInvoiceDirection.PURCHASE,
+				SupplierClassification.MERCHANDISE,
+				1,
+				10
+		);
+
+		assertEquals(1, response.content().size());
+		assertEquals("UF-42", response.content().getFirst().invoiceNumber());
+		assertEquals(1, response.page());
+		assertEquals(10, response.size());
+		assertEquals(21, response.totalElements());
+		assertEquals(3, response.totalPages());
+		assertFalse(response.first());
+		assertFalse(response.last());
+	}
+
+	@Test
+	void rejectsInvalidInvoicePageParameters() {
+		assertThrows(ApiException.class, () -> service.listInvoices(
+				connectionId,
+				SefInvoiceDirection.PURCHASE,
+				SupplierClassification.MERCHANDISE,
+				-1,
+				10
+		));
 	}
 }
