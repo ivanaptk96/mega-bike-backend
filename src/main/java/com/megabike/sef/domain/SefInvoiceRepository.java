@@ -11,6 +11,10 @@ import java.util.UUID;
 
 public interface SefInvoiceRepository extends JpaRepository<SefInvoice, UUID>, JpaSpecificationExecutor<SefInvoice> {
 
+	@org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+	@Query("select i from SefInvoice i where i.id = :id")
+	Optional<SefInvoice> findLockedById(@Param("id") UUID id);
+
 	Optional<SefInvoice> findByConnectionIdAndDirectionAndSefInvoiceId(UUID connectionId, SefInvoiceDirection direction, Long sefInvoiceId);
 
 	Optional<SefInvoice> findByIdAndConnectionIdAndDirection(UUID id, UUID connectionId, SefInvoiceDirection direction);

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+    <changeSet id="005-reserve-receipt-product-codes" author="codex">
+        <addColumn tableName="goods_receipt_line">
+            <column name="reserved_product_code" type="varchar(50)">
+                <constraints unique="true" uniqueConstraintName="uk_receipt_reserved_product_code"/>
+            </column>
+        </addColumn>
+        <sql splitStatements="false"><![CDATA[
+            DO $$
+            DECLARE item record; code text; number bigint;
+            BEGIN
+                FOR item IN SELECT id FROM goods_receipt_line WHERE product_id IS NULL LOOP
+                    LOOP
+                        number := nextval('product_code_seq');
+                        code := 'MB-' || lpad(number::text, greatest(6, length(number::text)), '0');
+                        EXIT WHEN NOT EXISTS (SELECT 1 FROM product WHERE product_code = code)
+                            AND NOT EXISTS (SELECT 1 FROM goods_receipt_line WHERE reserved_product_code = code);
+                    END LOOP;
+                    UPDATE goods_receipt_line SET reserved_product_code = code WHERE id = item.id;
+                END LOOP;
+            END $$;
+        ]]></sql>
+    </changeSet>
+</databaseChangeLog>

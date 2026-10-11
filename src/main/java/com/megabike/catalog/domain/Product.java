@@ -143,6 +143,10 @@ public class Product {
 		this.updatedAt = updatedAt;
 	}
 
+	public void setReceiptRetailPrice(BigDecimal price, Instant now) {
+		retailPrice = price; retailPriceIncludesVat = true; updatedAt = now;
+	}
+
 	public UUID getId() {
 		return id;
 	}

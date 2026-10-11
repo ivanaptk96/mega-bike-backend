@@ -16,4 +16,7 @@
     <include file="db/changelog/sef/003-link-sef-invoice-supplier.xml"/>
     <include file="db/changelog/supplier/004-classify-suppliers.xml"/>
     <include file="db/changelog/supplier/005-add-supplier-display-name.xml"/>
+    <include file="db/changelog/inventory/003-create-goods-receipts.xml"/>
+    <include file="db/changelog/inventory/004-generate-product-codes.xml"/>
+    <include file="db/changelog/inventory/005-reserve-receipt-product-codes.xml"/>
 </databaseChangeLog>

@@ -9,6 +9,10 @@ import java.util.UUID;
 
 public interface ProductRepository extends JpaRepository<Product, UUID>, JpaSpecificationExecutor<Product> {
 
+	@org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+	@org.springframework.data.jpa.repository.Query("select p from Product p where p.id = :id")
+	Optional<Product> findLockedById(@org.springframework.data.repository.query.Param("id") UUID id);
+
 	boolean existsByProductCode(String productCode);
 
 	boolean existsByProductCodeAndIdNot(String productCode, UUID id);

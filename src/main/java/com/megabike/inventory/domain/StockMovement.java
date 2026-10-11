@@ -53,6 +53,17 @@ public class StockMovement {
 	@Column(name = "created_at", nullable = false)
 	private Instant createdAt;
 
+	@Column(name = "receipt_line_id")
+	private UUID receiptLineId;
+
+	@Column(name = "receipt_retail_price", precision = 12, scale = 2)
+	private BigDecimal receiptRetailPrice;
+
+	public void recordReceipt(UUID lineId, BigDecimal retailPrice) {
+		this.receiptLineId = lineId;
+		this.receiptRetailPrice = retailPrice;
+	}
+
 	protected StockMovement() {
 	}
 

@@ -42,6 +42,11 @@ class MegaBikeBackendApplicationTests {
 	static class NoDatabaseTestConfiguration {
 
 		@Bean
+		org.springframework.jdbc.core.JdbcTemplate jdbcTemplate() {
+			return Mockito.mock(org.springframework.jdbc.core.JdbcTemplate.class);
+		}
+
+		@Bean
 		UserAccountRepository userAccountRepository() {
 			return Mockito.mock(UserAccountRepository.class);
 		}
@@ -64,6 +69,16 @@ class MegaBikeBackendApplicationTests {
 		@Bean
 		InventoryItemRepository inventoryItemRepository() {
 			return Mockito.mock(InventoryItemRepository.class);
+		}
+
+		@Bean
+		com.megabike.inventory.domain.GoodsReceiptRepository goodsReceiptRepository() {
+			return Mockito.mock(com.megabike.inventory.domain.GoodsReceiptRepository.class);
+		}
+
+		@Bean
+		com.megabike.inventory.domain.GoodsReceiptLineRepository goodsReceiptLineRepository() {
+			return Mockito.mock(com.megabike.inventory.domain.GoodsReceiptLineRepository.class);
 		}
 
 		@Bean
