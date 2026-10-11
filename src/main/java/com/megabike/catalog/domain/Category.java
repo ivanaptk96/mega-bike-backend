@@ -33,6 +33,9 @@ public class Category {
 	@Column(name = "active", nullable = false)
 	private boolean active;
 
+	@Column(name = "web_visible", nullable = false)
+	private boolean webVisible = true;
+
 	@Column(name = "created_at", nullable = false)
 	private Instant createdAt;
 
@@ -82,6 +85,8 @@ public class Category {
 	public boolean isActive() {
 		return active;
 	}
+
+	public boolean isWebVisible() { return webVisible; }
 
 	public Instant getCreatedAt() {
 		return createdAt;

@@ -29,10 +29,14 @@ public class ProductService {
 	private final ProductRepository productRepository;
 	private final CategoryRepository categoryRepository;
 	private final Clock clock;
+	private final CategoryService categoryService;
+	private final ProductImageService images;
 
-	public ProductService(ProductRepository productRepository, CategoryRepository categoryRepository) {
+	public ProductService(ProductRepository productRepository, CategoryRepository categoryRepository, CategoryService categoryService, ProductImageService images) {
 		this.productRepository = productRepository;
 		this.categoryRepository = categoryRepository;
+		this.categoryService = categoryService;
+		this.images = images;
 		this.clock = Clock.systemUTC();
 	}
 
@@ -72,7 +76,7 @@ public class ProductService {
 	@Transactional(readOnly = true)
 	public ProductPageResponse list(String query, UUID categoryId, Boolean active, int page, int size, String sort, String direction) {
 		Page<ProductResponse> products = productRepository.findAll(
-						searchSpecification(normalizeOptional(query), categoryId, active),
+						searchSpecification(normalizeOptional(query), categoryService.visibleCategoryIds(categoryId), active),
 						PageRequest.of(validatePage(page), validateSize(size), resolveSort(sort, direction))
 				).map(this::toResponse);
 
@@ -131,8 +135,11 @@ public class ProductService {
 	}
 
 	private Category resolveCategory(UUID categoryId) {
-		return categoryRepository.findById(categoryId)
+		Category category = categoryRepository.findById(categoryId)
 				.orElseThrow(() -> new ApiException(HttpStatus.BAD_REQUEST, "PRODUCT_CATEGORY_NOT_FOUND", "Product category was not found."));
+		if (!category.isActive() || !categoryService.isWebVisible(category) || categoryRepository.existsByParentId(categoryId))
+			throw new ApiException(HttpStatus.BAD_REQUEST, "PRODUCT_CATEGORY_INVALID", "Izaberite aktivnu krajnju kategoriju vidljivu na webu.");
+		return category;
 	}
 
 	private ProductResponse toResponse(Product product) {
@@ -154,7 +161,8 @@ public class ProductService {
 				product.isRetailPriceIncludesVat(),
 				product.isActive(),
 				product.getCreatedAt(),
-				product.getUpdatedAt()
+				product.getUpdatedAt(),
+				images.ids(product.getId())
 		);
 	}
 
@@ -169,16 +177,14 @@ public class ProductService {
 		return value.trim();
 	}
 
-	private Specification<Product> searchSpecification(String query, UUID categoryId, Boolean active) {
+	private Specification<Product> searchSpecification(String query, List<UUID> categoryIds, Boolean active) {
 		return (root, criteriaQuery, criteriaBuilder) -> {
 			List<Predicate> predicates = new ArrayList<>();
 
 			if (active != null) {
 				predicates.add(criteriaBuilder.equal(root.get("active"), active));
 			}
-			if (categoryId != null) {
-				predicates.add(criteriaBuilder.equal(root.get("category").get("id"), categoryId));
-			}
+			predicates.add(root.get("category").get("id").in(categoryIds));
 			if (query != null) {
 				String pattern = "%" + query.toLowerCase() + "%";
 				predicates.add(criteriaBuilder.or(

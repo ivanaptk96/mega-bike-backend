@@ -11,6 +11,8 @@ public interface CategoryRepository extends JpaRepository<Category, UUID> {
 
 	boolean existsBySlug(String slug);
 
+	boolean existsByParentId(UUID parentId);
+
 	boolean existsBySlugAndIdNot(String slug, UUID id);
 
 	@EntityGraph(attributePaths = "parent")

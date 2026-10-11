@@ -221,7 +221,7 @@ public class SupplierService {
 	@Transactional
 	public SupplierImportRunResponse importPlanetBikeCsv(UUID supplierId, MultipartFile file, String uploadedBy) {
 		Supplier supplier = findSupplier(supplierId);
-		if (!PLANET_BIKE_CODE.equals(supplier.getCode())) {
+		if (!PLANET_BIKE_CODE.equals(supplier.getCode()) && !"100116685".equals(supplier.getVatRegistrationNumber())) {
 			throw new ApiException(HttpStatus.BAD_REQUEST, "SUPPLIER_IMPORT_UNSUPPORTED", "Only Planet Bike CSV import is currently supported.");
 		}
 		if (file.isEmpty()) {
@@ -326,8 +326,9 @@ public class SupplierService {
 		String category = firstPresent(row, "category", "kategorija", "grupa");
 		String description = firstPresent(row, "description", "opis", "detaljan_opis");
 		String imageUrl = firstPresent(row, "image_url", "image", "slika", "slika_url");
-		BigDecimal price = parseDecimal(firstPresent(row, "purchase_price", "price", "cena", "cijena", "nabavna_cena", "veleprodajna_cena"));
-		BigDecimal availableQuantity = parseDecimal(firstPresent(row, "available_quantity", "stock", "stanje", "lager", "kolicina", "količina"));
+		String contractedPrice = firstPresent(row, "vpcena_u_rsd_sa_ugovorenim_rabatom");
+		BigDecimal price = parseDecimal(contractedPrice != null ? contractedPrice : firstPresent(row, "purchase_price", "price", "cena", "cijena", "nabavna_cena", "veleprodajna_cena"));
+		BigDecimal availableQuantity = parseDecimal(firstPresent(row, "available_quantity", "stock", "stanje", "lager", "kolicina", "količina", "kol_na"));
 
 		SupplierProduct supplierProduct = supplierProductRepository
 				.findWithSupplierAndProductBySupplierIdAndSupplierCode(supplier.getId(), supplierCode)
@@ -351,6 +352,12 @@ public class SupplierService {
 			));
 			counters.createdSupplierProducts++;
 		} else {
+			// Daily stock files omit catalog metadata; keep the previously captured data.
+			barcode = barcode != null ? barcode : supplierProduct.getSupplierBarcode();
+			brand = brand != null ? brand : supplierProduct.getBrandName();
+			category = category != null ? category : supplierProduct.getCategoryText();
+			description = description != null ? description : supplierProduct.getDescription();
+			imageUrl = imageUrl != null ? imageUrl : supplierProduct.getImageUrl();
 			supplierProduct.update(
 					supplierProduct.getProduct(),
 					supplierCode,
@@ -367,7 +374,7 @@ public class SupplierService {
 		}
 
 		if (price != null) {
-			snapshots.add(new PendingSnapshot(supplierProduct, price, true, availableQuantity));
+			snapshots.add(new PendingSnapshot(supplierProduct, price, contractedPrice == null, availableQuantity));
 			counters.priceSnapshots++;
 		} else {
 			issues.add(new PendingIssue(row.rowNumber(), "SUPPLIER_IMPORT_PRICE_MISSING", "Row imported without purchase price snapshot.", row.rawRow()));

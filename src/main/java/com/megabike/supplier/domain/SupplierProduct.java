@@ -94,6 +94,8 @@ public class SupplierProduct {
 		this.updatedAt = updatedAt;
 	}
 
+	public void linkProduct(Product product, Instant now) { this.product = product; this.updatedAt = now; }
+
 	public UUID getId() { return id; }
 	public Supplier getSupplier() { return supplier; }
 	public Product getProduct() { return product; }

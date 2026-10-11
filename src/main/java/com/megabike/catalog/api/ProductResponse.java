@@ -23,6 +23,7 @@ public record ProductResponse(
 		boolean retailPriceIncludesVat,
 		boolean active,
 		Instant createdAt,
-		Instant updatedAt
+		Instant updatedAt,
+		java.util.List<UUID> imageIds
 ) {
 }

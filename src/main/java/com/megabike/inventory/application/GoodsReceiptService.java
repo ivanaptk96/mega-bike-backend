@@ -1,13 +1,14 @@
 package com.megabike.inventory.application;
 
 import com.megabike.catalog.application.ProductService;
+import com.megabike.catalog.application.ProductImageService;
 import com.megabike.catalog.api.ProductRequest;
 import com.megabike.catalog.domain.*;
 import com.megabike.inventory.api.*;
 import com.megabike.inventory.domain.*;
 import com.megabike.sef.domain.*;
 import com.megabike.shared.api.ApiException;
-import com.megabike.supplier.domain.SupplierClassification;
+import com.megabike.supplier.domain.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -32,11 +33,16 @@ public class GoodsReceiptService {
 	private final InventoryItemRepository inventory;
 	private final StockMovementRepository movements;
 	private final JdbcTemplate jdbc;
+	private final SupplierProductRepository supplierProducts;
+	private final SupplierRepository suppliers;
+	private final ProductImageService productImages;
 	public GoodsReceiptService(SefInvoiceRepository invoices, SefInvoiceLineRepository invoiceLines,
 			GoodsReceiptRepository receipts, GoodsReceiptLineRepository lines, StockLocationRepository locations,
-			ProductRepository products, ProductService productService, InventoryItemRepository inventory, StockMovementRepository movements, JdbcTemplate jdbc) {
+			ProductRepository products, ProductService productService, InventoryItemRepository inventory, StockMovementRepository movements, JdbcTemplate jdbc,
+			SupplierProductRepository supplierProducts, SupplierRepository suppliers, ProductImageService productImages) {
 		this.invoices = invoices; this.invoiceLines = invoiceLines; this.receipts = receipts; this.lines = lines;
 		this.locations = locations; this.products = products; this.productService = productService; this.inventory = inventory; this.movements = movements; this.jdbc = jdbc;
+		this.supplierProducts = supplierProducts; this.suppliers = suppliers; this.productImages = productImages;
 	}
 	@Transactional(readOnly = true)
 	public Page<GoodsReceiptResponse.Summary> list(int page, int size) {
@@ -93,9 +99,19 @@ public class GoodsReceiptService {
 		var byId = new HashMap<UUID, GoodsReceiptLine>(); all.forEach(l -> byId.put(l.getId(), l));
 		var seen = new HashSet<UUID>();
 		var prices = new HashMap<UUID, BigDecimal>();
+		// Serialize first-time SKU linking across invoices from the same supplier.
+		if (invoice.getSupplier() != null) suppliers.findLockedById(invoice.getSupplier().getId()).orElseThrow();
+		var matches = new HashMap<UUID, Match>();
+		for (var approval : request.lines()) {
+			var line = byId.get(approval.lineId());
+			if (line != null) matches.put(line.getId(), match(invoice, line));
+		}
 		// Consistent product lock order avoids deadlocks when two invoices contain the same products.
 		var lockedProducts = new HashMap<UUID, Product>();
-		request.lines().stream().map(GoodsReceiptRequest.Line::productId).filter(Objects::nonNull).distinct().sorted().forEach(id ->
+		var productIds = new HashSet<UUID>();
+		request.lines().stream().map(GoodsReceiptRequest.Line::productId).filter(Objects::nonNull).forEach(productIds::add);
+		matches.values().stream().map(Match::product).filter(Objects::nonNull).map(Product::getId).forEach(productIds::add);
+		productIds.stream().sorted().forEach(id ->
 				lockedProducts.put(id, products.findLockedById(id).orElseThrow(() -> error("PRODUCT_NOT_FOUND", "Proizvod nije pronađen."))));
 		for (var approval : request.lines()) {
 			var line = byId.get(approval.lineId());
@@ -106,20 +122,43 @@ public class GoodsReceiptService {
 			if ((approval.productId() == null) == (approval.newProduct() == null))
 				throw error("RECEIPT_PRODUCT_REQUIRED", "Izaberite postojeći ili novi proizvod.");
 			Product product;
-			if (approval.productId() != null) {
+			var match = matches.get(line.getId());
+			if (match.supplierProduct() == null) match = match(invoice, line);
+			var supplierProduct = match.supplierProduct();
+			var automatic = supplierProduct != null && supplierProduct.getProduct() != null ? supplierProduct.getProduct() : match.product();
+			if (automatic != null && approval.productId() != null && !automatic.getId().equals(approval.productId()))
+				throw conflict("Šifra dobavljača je već povezana sa drugim proizvodom. Osvežite prijem.");
+			if (automatic != null) {
+				product = lockedProducts.computeIfAbsent(automatic.getId(), id -> products.findLockedById(id).orElseThrow());
+			} else if (approval.productId() != null) {
 				product = lockedProducts.get(approval.productId());
 			} else {
 				var n = approval.newProduct();
 				if (line.getPurchasePrice() == null || line.getPurchasePrice().signum() < 0 || line.getVatRate() == null)
 					throw error("RECEIPT_INVOICE_PRICE_MISSING", "Na fakturi nedostaje nabavna cena ili PDV. Proverite sinhronizaciju fakture.");
-				var created = productService.create(new ProductRequest(line.getReservedProductCode(), null, null, n.name(), null,
-						null, n.categoryId(), ProductUnit.PIECE, line.getPurchasePrice().setScale(2, RoundingMode.HALF_UP),
+				String description = supplierProduct == null ? null : supplierProduct.getDescription();
+				if (description != null && description.length() > 2000) description = description.substring(0, 2000);
+				String barcode = supplierProduct == null ? null : supplierProduct.getSupplierBarcode();
+				if (barcode != null && barcode.length() > 64) barcode = null;
+				var created = productService.create(new ProductRequest(line.getReservedProductCode(), line.getSellerItemId(), barcode, n.name(), description,
+						supplierProduct == null ? null : supplierProduct.getBrandName(), n.categoryId(), ProductUnit.PIECE, line.getPurchasePrice().setScale(2, RoundingMode.HALF_UP),
 						approval.retailPrice(), line.getVatRate(), true, true));
 				product = products.findById(created.id()).orElseThrow();
 			}
 			if (!product.isActive()) throw error("PRODUCT_INACTIVE", "Proizvod mora biti aktivan.");
 			if (line.getProduct() != null && !line.getProduct().getId().equals(product.getId()))
 				throw conflict("Delimično primljena stavka mora ostati vezana za isti proizvod.");
+			if (supplierProduct == null && invoice.getSupplier() != null && line.getSellerItemId() != null && !line.getSellerItemId().isBlank()) {
+				supplierProduct = supplierProducts.save(new SupplierProduct(UUID.randomUUID(), invoice.getSupplier(), product,
+						line.getSellerItemId().trim(), product.getBarcode(), product.getName(), product.getBrandName(),
+						product.getCategory().getName(), product.getDescription(), null, true, Instant.now()));
+			} else if (supplierProduct != null) {
+				supplierProduct.linkProduct(product, Instant.now());
+			}
+			if (supplierProduct != null) {
+				products.flush(); // Make the new product visible to JDBC before copying image bytes.
+				productImages.copyFromSupplier(product.getId(), supplierProduct.getId());
+			}
 			var previousPrice = prices.putIfAbsent(product.getId(), approval.retailPrice());
 			if (previousPrice != null && previousPrice.compareTo(approval.retailPrice()) != 0)
 				throw error("RECEIPT_PRICE_CONFLICT", "Isti proizvod mora imati istu prodajnu cenu u potvrdi.");
@@ -157,10 +196,14 @@ public class GoodsReceiptService {
 	}
 	private GoodsReceiptResponse response(SefInvoice invoice, GoodsReceipt receipt) {
 		var rows = receipt == null ? List.<GoodsReceiptResponse.Line>of() : lines.findByReceiptIdOrderByLineNumberAsc(receipt.getId()).stream()
-				.map(l -> new GoodsReceiptResponse.Line(l.getId(), l.getLineNumber(), l.getItemName(), l.getSellerItemId(), l.getUnitCode(),
-						l.getExpectedQuantity(), l.getReceivedQuantity(), l.getPurchasePrice(), l.getVatRate(), l.getRetailPrice(),
-						l.getProduct() == null ? null : l.getProduct().getId(), l.getProduct() == null ? null : l.getProduct().getName(), l.getStatus(), l.getApprovedBy(), l.getApprovedAt(),
-						l.getProduct() == null ? l.getReservedProductCode() : l.getProduct().getProductCode(), imageUrl(invoice, l))).toList();
+				.map(l -> {
+					var product = match(invoice, l).product();
+					return new GoodsReceiptResponse.Line(l.getId(), l.getLineNumber(), l.getItemName(), l.getSellerItemId(), l.getUnitCode(),
+						l.getExpectedQuantity(), l.getReceivedQuantity(), l.getPurchasePrice(), l.getVatRate(),
+						l.getRetailPrice() != null ? l.getRetailPrice() : product == null ? null : product.getRetailPrice(),
+						product == null ? null : product.getId(), product == null ? null : product.getName(), l.getStatus(), l.getApprovedBy(), l.getApprovedAt(),
+						product == null ? l.getReservedProductCode() : product.getProductCode(), imageUrl(invoice, l, product));
+				}).toList();
 		return new GoodsReceiptResponse(invoice.getId(), invoice.getConnection().getId(), invoice.getInvoiceNumber(), supplierName(invoice),
 				receipt == null ? ReceiptStatus.PENDING : receipt.getStatus(), receipt == null ? null : receipt.getStockLocation().getId(),
 				receipt == null ? null : receipt.getStockLocation().getName(), receipt == null ? 0 : receipt.getVersion(), rows);
@@ -173,8 +216,39 @@ public class GoodsReceiptService {
 		} while (products.existsByProductCode(code));
 		return code;
 	}
-	private String imageUrl(SefInvoice invoice, GoodsReceiptLine line) {
+	private record Match(SupplierProduct supplierProduct, Product product) {}
+	private Match match(SefInvoice invoice, GoodsReceiptLine line) {
+		SupplierProduct supplierProduct = invoice.getSupplier() == null || line.getSellerItemId() == null || line.getSellerItemId().isBlank()
+				? null : supplierProducts.findWithSupplierAndProductBySupplierIdAndSupplierCode(invoice.getSupplier().getId(), line.getSellerItemId().trim()).orElse(null);
+		Product product = line.getProduct();
+		if (product == null && supplierProduct != null) product = supplierProduct.getProduct();
+		if (product == null && supplierProduct != null && supplierProduct.getSupplierBarcode() != null)
+			product = products.findByBarcode(supplierProduct.getSupplierBarcode()).orElse(null);
+		// Recover unambiguous links from receipts created before supplier SKU linking existed.
+		if (product == null && invoice.getSupplier() != null && line.getSellerItemId() != null) {
+			var ids = jdbc.queryForList("""
+					select distinct l.product_id from goods_receipt_line l
+					join goods_receipt r on r.id = l.receipt_id join sef_invoice i on i.id = r.invoice_id
+					where i.supplier_id = ? and trim(l.seller_item_id) = ? and l.product_id is not null
+					""", UUID.class, invoice.getSupplier().getId(), line.getSellerItemId().trim());
+			if (ids.size() == 1) product = products.findById(ids.getFirst()).orElse(null);
+			else if (ids.size() > 1) throw conflict("Šifra " + line.getSellerItemId() + " ima više prethodnih proizvoda. Prvo proverite povezivanje dobavljača.");
+		}
+		return new Match(supplierProduct, product);
+	}
+	private String imageUrl(SefInvoice invoice, GoodsReceiptLine line, Product product) {
+		if (product != null) {
+			var ids = productImages.ids(product.getId());
+			if (!ids.isEmpty()) return "/api/internal/products/" + product.getId() + "/images/" + ids.getFirst();
+		}
 		if (invoice.getSupplier() == null) return null;
+		var saved = jdbc.queryForList("""
+				select c.metadata->'imageIds'->>0 from supplier_catalog_product c
+				join supplier_product p on p.id = c.supplier_product_id
+				where p.supplier_id = ? and p.supplier_code = ? and p.active
+				and c.metadata->'imageIds'->>0 is not null
+				""", String.class, invoice.getSupplier().getId(), line.getSellerItemId() == null ? null : line.getSellerItemId().trim());
+		if (!saved.isEmpty()) return "/api/internal/supplier-catalog-images/" + saved.getFirst();
 		var urls = jdbc.queryForList("""
 				select image_url from supplier_product
 				where supplier_id = ? and active = true and image_url is not null and image_url != ''

@@ -10,6 +10,7 @@ public record CategoryResponse(
 		UUID parentId,
 		String parentName,
 		boolean active,
+		boolean webVisible,
 		Instant createdAt,
 		Instant updatedAt
 ) {

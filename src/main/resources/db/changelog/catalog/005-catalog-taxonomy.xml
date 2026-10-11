@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+    <changeSet id="005-category-web-visibility" author="codex">
+        <addColumn tableName="category"><column name="web_visible" type="boolean" defaultValueBoolean="true"><constraints nullable="false"/></column></addColumn>
+    </changeSet>
+    <changeSet id="006-seed-catalog-taxonomy" author="codex">
+        <sqlFile path="db/changelog/catalog/006-seed-catalog-taxonomy.sql"/>
+        <sqlFile path="db/changelog/catalog/007-reconcile-legacy-categories.sql" splitStatements="false"/>
+    </changeSet>
+</databaseChangeLog>

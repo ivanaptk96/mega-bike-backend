@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+    <changeSet id="008-product-images" author="codex">
+        <sql>
+            CREATE TABLE product_image (
+                id uuid PRIMARY KEY,
+                product_id uuid NOT NULL REFERENCES product(id) ON DELETE CASCADE,
+                sha256 varchar(64) NOT NULL,
+                content_type varchar(80) NOT NULL,
+                content bytea NOT NULL,
+                position integer NOT NULL,
+                created_at timestamptz NOT NULL,
+                UNIQUE (product_id, sha256)
+            );
+            CREATE INDEX ix_product_image_product ON product_image(product_id, position);
+        </sql>
+    </changeSet>
+</databaseChangeLog>

@@ -11,4 +11,5 @@
     <include file="db/changelog/catalog/004-insert-dev-products.xml"/>
     <include file="db/changelog/inventory/002-insert-dev-inventory-data.xml"/>
     <include file="db/changelog/supplier/002-insert-dev-suppliers.xml"/>
+    <include file="db/changelog/catalog/008-reconcile-dev-categories.xml"/>
 </databaseChangeLog>

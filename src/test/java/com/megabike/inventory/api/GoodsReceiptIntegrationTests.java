@@ -78,6 +78,113 @@ class GoodsReceiptIntegrationTests {
 				.andExpect(status().isOk()).andReturn().getResponse().getContentAsString(), GoodsReceiptResponse.class);
 	}
 	BigDecimal stock() { return jdbc.queryForObject("select quantity_on_hand from inventory_item where product_id = ? and stock_location_id = ?", BigDecimal.class, existingProduct, location); }
+	UUID seedSupplierCatalog(UUID linkedProduct) {
+		UUID supplierId = jdbc.queryForObject("select supplier_id from sef_invoice where id=?", UUID.class, invoiceId);
+		UUID supplierProductId = UUID.randomUUID();
+		UUID imageId = UUID.randomUUID();
+		jdbc.update("insert into supplier_product(id,supplier_id,product_id,supplier_code,supplier_product_name,brand_name,description,active,created_at,version) values (?,?,?,'CAP-1','Bicikl M crveni','Test brand','Opis dobavljača',true,now(),0)", supplierProductId, supplierId, linkedProduct);
+		jdbc.update("insert into supplier_catalog_image(id,supplier_id,sha256,content_type,source_url,content,captured_at) values (?,?,'receipt-test-image','image/jpeg','https://supplier.example/bike.jpg',?,now())", imageId, supplierId, new byte[]{(byte) 0xff, (byte) 0xd8, (byte) 0xff});
+		jdbc.update("insert into supplier_catalog_product(supplier_product_id,model_code,source_url,metadata,captured_at,stock_date) values (?,'CAP','https://supplier.example/bike',?::jsonb,now(),current_date)", supplierProductId, "{\"imageIds\":[\"" + imageId + "\"]}");
+		return supplierProductId;
+	}
+	void anotherInvoice() {
+		var previous = invoices.findById(invoiceId).orElseThrow();
+		var supplier = suppliers.findById(jdbc.queryForObject("select supplier_id from sef_invoice where id=?", UUID.class, invoiceId)).orElseThrow();
+		var connection = connections.findById(previous.getConnection().getId()).orElseThrow();
+		var now = Instant.now();
+		var invoice = new SefInvoice(UUID.randomUUID(), connection, 2L, SefInvoiceDirection.PURCHASE, now);
+		invoice.applyPurchaseOverview(supplier, null, null, "TEST-21", "380", "Approved", supplier.getName(), null, null,
+				"RSD", BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, now, now, null, now);
+		invoices.save(invoice); invoiceId = invoice.getId();
+		sourceLines.save(new SefInvoiceLine(UUID.randomUUID(), invoice, 1, "1", "Bicikl", null, "CAP-1", null, "H87",
+				new BigDecimal("20"), new BigDecimal("10000"), null, null, "S", new BigDecimal("20"), null, null));
+	}
+	@Test
+	void supplierSkuAutomaticallySelectsExistingProductAndCopiesItsSavedImage() throws Exception {
+		UUID supplierProductId = seedSupplierCatalog(existingProduct);
+		int productCount = jdbc.queryForObject("select count(*) from product", Integer.class);
+		var before = stock();
+		var receipt = start();
+		assertThat(receipt.lines().getFirst().productId()).isEqualTo(existingProduct);
+		assertThat(receipt.lines().getFirst().imageUrl()).startsWith("/api/internal/supplier-catalog-images/");
+		var received = approve(approval(receipt, 20, "25000"));
+		assertThat(stock()).isEqualByComparingTo(before.add(new BigDecimal("20")));
+		assertThat(jdbc.queryForObject("select count(*) from product", Integer.class)).isEqualTo(productCount);
+		assertThat(jdbc.queryForObject("select product_id from supplier_product where id=?", UUID.class, supplierProductId)).isEqualTo(existingProduct);
+		assertThat(received.lines().getFirst().imageUrl()).startsWith("/api/internal/products/" + existingProduct + "/images/");
+		assertThat(jdbc.queryForObject("select count(*) from product_image where product_id=?", Integer.class, existingProduct)).isPositive();
+	}
+	@Test
+	void newProductKeepsImagesIndependentlyAndTheNextInvoiceReusesItsSupplierSku() throws Exception {
+		UUID supplierProductId = seedSupplierCatalog(null);
+		var r = start();
+		var category = jdbc.queryForObject("select category_id from product where id=?", UUID.class, existingProduct);
+		var newProduct = new GoodsReceiptRequest.NewProduct("Novi bicikl", category);
+		var received = approve(new GoodsReceiptRequest.Approval(List.of(new GoodsReceiptRequest.Line(r.lines().getFirst().id(), null, newProduct, new BigDecimal("20"), new BigDecimal("23000"))), r.version()));
+		UUID productId = received.lines().getFirst().productId();
+		String imageUrl = received.lines().getFirst().imageUrl();
+		assertThat(jdbc.queryForObject("select product_id from supplier_product where id=?", UUID.class, supplierProductId)).isEqualTo(productId);
+		assertThat(jdbc.queryForObject("select purchase_price from product where id=?", BigDecimal.class, productId)).isEqualByComparingTo("10000");
+		assertThat(jdbc.queryForObject("select brand_name from product where id=?", String.class, productId)).isEqualTo("Test brand");
+		assertThat(jdbc.queryForObject("select description from product where id=?", String.class, productId)).isEqualTo("Opis dobavljača");
+		int productCount = jdbc.queryForObject("select count(*) from product", Integer.class);
+		anotherInvoice();
+		var next = start();
+		assertThat(next.lines().getFirst().productId()).isEqualTo(productId);
+		// A stale client proposing a new product must still reuse the established SKU link.
+		approve(new GoodsReceiptRequest.Approval(List.of(new GoodsReceiptRequest.Line(next.lines().getFirst().id(), null, newProduct, new BigDecimal("20"), new BigDecimal("24000"))), next.version()));
+		assertThat(jdbc.queryForObject("select count(*) from product", Integer.class)).isEqualTo(productCount);
+		assertThat(jdbc.queryForObject("select quantity_on_hand from inventory_item where product_id=?", BigDecimal.class, productId)).isEqualByComparingTo("40");
+		assertThat(jdbc.queryForObject("select count(*) from product_image where product_id=?", Integer.class, productId)).isEqualTo(1);
+		jdbc.update("delete from supplier_catalog_product where supplier_product_id=?", supplierProductId);
+		jdbc.update("delete from supplier_catalog_image where supplier_id=(select supplier_id from supplier_product where id=?)", supplierProductId);
+		var reader = org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user("viewer")
+				.authorities(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_EMPLOYEE"), new org.springframework.security.core.authority.SimpleGrantedAuthority("PRODUCT_READ"));
+		mvc.perform(get(imageUrl).with(reader)).andExpect(status().isOk()).andExpect(content().contentType("image/jpeg"))
+				.andExpect(content().bytes(new byte[]{(byte) 0xff, (byte) 0xd8, (byte) 0xff}));
+		mvc.perform(get("/api/internal/products/" + productId).with(reader)).andExpect(status().isOk()).andExpect(jsonPath("$.imageIds.length()").value(1));
+		mvc.perform(get(imageUrl)).andExpect(status().isForbidden());
+		mvc.perform(get(imageUrl.replace(productId.toString(), existingProduct.toString())).with(reader)).andExpect(status().isNotFound());
+	}
+	@Test
+	void repeatedSupplierSkuInOneInvoiceCreatesOneProductAndAddsBothQuantities() throws Exception {
+		seedSupplierCatalog(null);
+		assertRepeatedSkuCreatesOneProduct();
+	}
+	@Test
+	void unknownSupplierSkuIsLinkedForBothLinesWithinTheSameConfirmation() throws Exception {
+		assertRepeatedSkuCreatesOneProduct();
+	}
+	void assertRepeatedSkuCreatesOneProduct() throws Exception {
+		var invoice = invoices.findById(invoiceId).orElseThrow();
+		sourceLines.save(new SefInvoiceLine(UUID.randomUUID(), invoice, 2, "2", "Bicikl", null, "CAP-1", null, "H87",
+				new BigDecimal("2"), new BigDecimal("10000"), null, null, "S", new BigDecimal("20"), null, null));
+		var r = start();
+		var category = jdbc.queryForObject("select category_id from product where id=?", UUID.class, existingProduct);
+		var newProduct = new GoodsReceiptRequest.NewProduct("Bicikl", category);
+		int before = jdbc.queryForObject("select count(*) from product", Integer.class);
+		var received = approve(new GoodsReceiptRequest.Approval(r.lines().stream().map(l -> new GoodsReceiptRequest.Line(l.id(), null, newProduct, l.expectedQuantity().setScale(0), new BigDecimal("23000"))).toList(), r.version()));
+		assertThat(received.lines()).extracting(GoodsReceiptResponse.Line::productId).containsOnly(received.lines().getFirst().productId());
+		assertThat(jdbc.queryForObject("select count(*) from product", Integer.class)).isEqualTo(before + 1);
+		assertThat(jdbc.queryForObject("select quantity_on_hand from inventory_item where product_id=?", BigDecimal.class, received.lines().getFirst().productId())).isEqualByComparingTo("22");
+	}
+	@Test
+	void supplierSkuFromAnotherSupplierCannotSelectOurProduct() throws Exception {
+		var now = Instant.now();
+		var other = suppliers.save(new Supplier(UUID.randomUUID(), "OTHER-" + UUID.randomUUID(), "Drugi dobavljač", null, null, "RSD", true, now));
+		jdbc.update("insert into supplier_product(id,supplier_id,product_id,supplier_code,supplier_product_name,active,created_at,version) values (?,?,?,'CAP-1','Drugi bicikl',true,now(),0)", UUID.randomUUID(), other.getId(), existingProduct);
+		assertThat(start().lines().getFirst().productId()).isNull();
+	}
+	@Test
+	void cannotOverrideAnEstablishedSupplierSkuLink() throws Exception {
+		seedSupplierCatalog(existingProduct);
+		var r = start(); var before = stock();
+		var differentProduct = UUID.fromString("50000000-0000-0000-0000-000000000002");
+		var request = new GoodsReceiptRequest.Approval(List.of(new GoodsReceiptRequest.Line(r.lines().getFirst().id(), differentProduct, null, new BigDecimal("20"), new BigDecimal("25000"))), r.version());
+		mvc.perform(post("/api/internal/goods-receipts/" + invoiceId + "/approve").contentType("application/json").content(mapper.writeValueAsString(request))).andExpect(status().isConflict());
+		assertThat(stock()).isEqualByComparingTo(before);
+		assertThat(jdbc.queryForObject("select count(*) from stock_movement where receipt_line_id=?", Integer.class, r.lines().getFirst().id())).isZero();
+	}
 	@Test
 	void partialAndFullReceiptUpdateStockPriceAndAuditAndRejectReplay() throws Exception {
 		var before = stock();

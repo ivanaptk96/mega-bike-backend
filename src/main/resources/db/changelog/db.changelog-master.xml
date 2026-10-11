@@ -19,4 +19,7 @@
     <include file="db/changelog/inventory/003-create-goods-receipts.xml"/>
     <include file="db/changelog/inventory/004-generate-product-codes.xml"/>
     <include file="db/changelog/inventory/005-reserve-receipt-product-codes.xml"/>
+    <include file="db/changelog/catalog/005-catalog-taxonomy.xml"/>
+    <include file="db/changelog/supplier/006-supplier-catalog.xml"/>
+    <include file="db/changelog/catalog/008-product-images.xml"/>
 </databaseChangeLog>

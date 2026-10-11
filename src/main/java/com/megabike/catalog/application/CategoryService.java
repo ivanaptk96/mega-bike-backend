@@ -12,6 +12,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -50,6 +53,7 @@ public class CategoryService {
 	@Transactional(readOnly = true)
 	public List<CategoryResponse> list() {
 		return categoryRepository.findAllByOrderByNameAsc().stream()
+				.filter(this::isWebVisible)
 				.map(this::toResponse)
 				.toList();
 	}
@@ -71,15 +75,44 @@ public class CategoryService {
 			throw new ApiException(HttpStatus.BAD_REQUEST, "CATEGORY_PARENT_INVALID", "Category cannot be its own parent.");
 		}
 
+		Category parent = resolveParent(request.parentId());
+		Set<UUID> visited = new HashSet<>();
+		for (Category ancestor = parent; ancestor != null; ancestor = ancestor.getParent()) {
+			if (ancestor.getId().equals(id) || !visited.add(ancestor.getId()))
+				throw new ApiException(HttpStatus.BAD_REQUEST, "CATEGORY_PARENT_INVALID", "Category hierarchy cannot contain a cycle.");
+		}
+
 		category.update(
 				request.name().trim(),
 				slug,
-				resolveParent(request.parentId()),
+				parent,
 				request.active(),
 				Instant.now(clock)
 		);
 
 		return toResponse(category);
+	}
+
+	public boolean isWebVisible(Category category) {
+		Set<UUID> visited = new HashSet<>();
+		for (Category current = category; current != null; current = current.getParent()) {
+			if (!current.isWebVisible() || !visited.add(current.getId())) return false;
+		}
+		return true;
+	}
+
+	@Transactional(readOnly = true)
+	public List<UUID> visibleCategoryIds(UUID ancestorId) {
+		List<UUID> ids = new ArrayList<>();
+		for (Category category : categoryRepository.findAllByOrderByNameAsc()) {
+			if (!isWebVisible(category)) continue;
+			if (ancestorId == null) { ids.add(category.getId()); continue; }
+			Set<UUID> visited = new HashSet<>();
+			for (Category current = category; current != null && visited.add(current.getId()); current = current.getParent()) {
+				if (current.getId().equals(ancestorId)) { ids.add(category.getId()); break; }
+			}
+		}
+		return ids;
 	}
 
 	private Category findById(UUID id) {
@@ -111,6 +144,7 @@ public class CategoryService {
 				parent == null ? null : parent.getId(),
 				parent == null ? null : parent.getName(),
 				category.isActive(),
+				isWebVisible(category),
 				category.getCreatedAt(),
 				category.getUpdatedAt()
 		);
