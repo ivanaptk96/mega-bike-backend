@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.megabike.identity.api.LoginRequest;
 import com.megabike.identity.api.LoginResponse;
 import com.megabike.shared.api.ErrorResponse;
+import com.megabike.supplier.domain.SupplierClassification;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -69,6 +70,31 @@ class SupplierIntegrationTests {
 		assertThat(supplier.status()).isEqualTo(HttpStatus.OK.value());
 		assertThat(supplier.body().code()).isEqualTo("PLANET_BIKE");
 		assertThat(supplier.body().defaultCurrency()).isEqualTo("RSD");
+	}
+
+	@Test
+	void managerCanClassifySupplier() {
+		String token = login("manager@megabike.local", "password").accessToken();
+
+		TestResponse<SupplierResponse> response = put(
+				"/api/internal/suppliers/" + PLANET_BIKE_ID + "/classification",
+				new SupplierClassificationRequest(SupplierClassification.MERCHANDISE),
+				token,
+				SupplierResponse.class
+		);
+
+		assertThat(response.status()).isEqualTo(HttpStatus.OK.value());
+		assertThat(response.body().classification()).isEqualTo(SupplierClassification.MERCHANDISE);
+
+		TestResponse<SupplierResponse[]> merchandise = get(
+				"/api/internal/suppliers?classification=MERCHANDISE",
+				token,
+				SupplierResponse[].class
+		);
+		assertThat(merchandise.status()).isEqualTo(HttpStatus.OK.value());
+		assertThat(merchandise.body())
+				.extracting(SupplierResponse::id)
+				.contains(PLANET_BIKE_ID);
 	}
 
 	@Test

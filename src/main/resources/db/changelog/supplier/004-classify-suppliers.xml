@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="001-add-supplier-classification" author="codex">
+        <addColumn tableName="supplier">
+            <column name="classification" type="varchar(30)" defaultValue="UNCLASSIFIED">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+
+        <update tableName="supplier">
+            <column name="classification" value="MERCHANDISE"/>
+            <where>vat_registration_number IN ('101443962', '100983990', '100116685', '107981016', '109759263', '101752528')</where>
+        </update>
+
+        <update tableName="supplier">
+            <column name="classification" value="SERVICES"/>
+            <where>vat_registration_number IN ('103920327', '100003603', '100161448', '101600879', '100001159', '100002549', '110224482', '100383967', '100203395', '112103932', '100002887')</where>
+        </update>
+    </changeSet>
+</databaseChangeLog>

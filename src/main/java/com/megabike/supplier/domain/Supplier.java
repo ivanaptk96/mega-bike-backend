@@ -2,6 +2,8 @@ package com.megabike.supplier.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.Version;
@@ -23,11 +25,18 @@ public class Supplier {
 	@Column(name = "name", nullable = false, length = 200)
 	private String name;
 
+	@Column(name = "display_name", length = 200)
+	private String displayName;
+
 	@Column(name = "registration_number", length = 40)
 	private String registrationNumber;
 
 	@Column(name = "vat_registration_number", length = 40)
 	private String vatRegistrationNumber;
+
+	@Enumerated(EnumType.STRING)
+	@Column(name = "classification", nullable = false, length = 30)
+	private SupplierClassification classification = SupplierClassification.UNCLASSIFIED;
 
 	@Column(name = "public_url", length = 500)
 	private String publicUrl;
@@ -87,11 +96,24 @@ public class Supplier {
 		this.updatedAt = updatedAt;
 	}
 
+	public void updateClassification(SupplierClassification classification, Instant updatedAt) {
+		this.classification = classification;
+		this.updatedAt = updatedAt;
+	}
+
+	public void updateDisplayName(String displayName, Instant updatedAt) {
+		this.displayName = displayName;
+		this.updatedAt = updatedAt;
+	}
+
 	public UUID getId() { return id; }
 	public String getCode() { return code; }
 	public String getName() { return name; }
+	public String getDisplayName() { return displayName; }
+	public String getDisplayNameOrName() { return displayName == null || displayName.isBlank() ? name : displayName; }
 	public String getRegistrationNumber() { return registrationNumber; }
 	public String getVatRegistrationNumber() { return vatRegistrationNumber; }
+	public SupplierClassification getClassification() { return classification; }
 	public String getPublicUrl() { return publicUrl; }
 	public String getB2bUrl() { return b2bUrl; }
 	public String getDefaultCurrency() { return defaultCurrency; }

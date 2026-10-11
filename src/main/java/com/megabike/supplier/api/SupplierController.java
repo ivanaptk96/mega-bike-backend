@@ -1,6 +1,7 @@
 package com.megabike.supplier.api;
 
 import com.megabike.supplier.application.SupplierService;
+import com.megabike.supplier.domain.SupplierClassification;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -36,8 +37,10 @@ public class SupplierController {
 
 	@GetMapping("/suppliers")
 	@PreAuthorize("hasAuthority('SUPPLIER_MANAGE')")
-	public List<SupplierResponse> listSuppliers() {
-		return supplierService.listSuppliers();
+	public List<SupplierResponse> listSuppliers(
+			@RequestParam(required = false) SupplierClassification classification
+	) {
+		return supplierService.listSuppliers(classification);
 	}
 
 	@GetMapping("/suppliers/{id}")
@@ -50,6 +53,15 @@ public class SupplierController {
 	@PreAuthorize("hasAuthority('SUPPLIER_MANAGE')")
 	public SupplierResponse updateSupplier(@PathVariable UUID id, @Valid @RequestBody SupplierRequest request) {
 		return supplierService.updateSupplier(id, request);
+	}
+
+	@PutMapping("/suppliers/{id}/classification")
+	@PreAuthorize("hasAuthority('SUPPLIER_MANAGE')")
+	public SupplierResponse updateSupplierClassification(
+			@PathVariable UUID id,
+			@Valid @RequestBody SupplierClassificationRequest request
+	) {
+		return supplierService.updateSupplierClassification(id, request);
 	}
 
 	@PostMapping("/supplier-products")

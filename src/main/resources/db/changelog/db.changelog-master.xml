@@ -14,4 +14,6 @@
     <include file="db/changelog/sef/001-create-sef-tables.xml"/>
     <include file="db/changelog/sef/002-expand-sef-invoice-data.xml"/>
     <include file="db/changelog/sef/003-link-sef-invoice-supplier.xml"/>
+    <include file="db/changelog/supplier/004-classify-suppliers.xml"/>
+    <include file="db/changelog/supplier/005-add-supplier-display-name.xml"/>
 </databaseChangeLog>

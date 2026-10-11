@@ -5,12 +5,14 @@ import com.megabike.catalog.domain.ProductRepository;
 import com.megabike.shared.api.ApiException;
 import com.megabike.supplier.api.SupplierImportIssueResponse;
 import com.megabike.supplier.api.SupplierImportRunResponse;
+import com.megabike.supplier.api.SupplierClassificationRequest;
 import com.megabike.supplier.api.SupplierProductPageResponse;
 import com.megabike.supplier.api.SupplierProductRequest;
 import com.megabike.supplier.api.SupplierProductResponse;
 import com.megabike.supplier.api.SupplierRequest;
 import com.megabike.supplier.api.SupplierResponse;
 import com.megabike.supplier.domain.Supplier;
+import com.megabike.supplier.domain.SupplierClassification;
 import com.megabike.supplier.domain.SupplierImportIssue;
 import com.megabike.supplier.domain.SupplierImportIssueRepository;
 import com.megabike.supplier.domain.SupplierImportRun;
@@ -99,8 +101,11 @@ public class SupplierService {
 	}
 
 	@Transactional(readOnly = true)
-	public List<SupplierResponse> listSuppliers() {
-		return supplierRepository.findAllByOrderByNameAsc().stream()
+	public List<SupplierResponse> listSuppliers(SupplierClassification classification) {
+		List<Supplier> suppliers = classification == null
+				? supplierRepository.findAllByOrderByNameAsc()
+				: supplierRepository.findByClassificationOrderByNameAsc(classification);
+		return suppliers.stream()
 				.map(this::toSupplierResponse)
 				.toList();
 	}
@@ -128,6 +133,13 @@ public class SupplierService {
 				request.active(),
 				Instant.now(clock)
 		);
+		return toSupplierResponse(supplier);
+	}
+
+	@Transactional
+	public SupplierResponse updateSupplierClassification(UUID id, SupplierClassificationRequest request) {
+		Supplier supplier = findSupplier(id);
+		supplier.updateClassification(request.classification(), Instant.now(clock));
 		return toSupplierResponse(supplier);
 	}
 
@@ -512,8 +524,10 @@ public class SupplierService {
 				supplier.getId(),
 				supplier.getCode(),
 				supplier.getName(),
+				supplier.getDisplayName(),
 				supplier.getRegistrationNumber(),
 				supplier.getVatRegistrationNumber(),
+				supplier.getClassification(),
 				supplier.getPublicUrl(),
 				supplier.getB2bUrl(),
 				supplier.getDefaultCurrency(),
@@ -529,7 +543,7 @@ public class SupplierService {
 				supplierProduct.getId(),
 				supplierProduct.getSupplier().getId(),
 				supplierProduct.getSupplierCode(),
-				supplierProduct.getSupplier().getName(),
+				supplierProduct.getSupplier().getDisplayNameOrName(),
 				product == null ? null : product.getId(),
 				product == null ? null : product.getProductCode(),
 				product == null ? null : product.getName(),
@@ -547,7 +561,7 @@ public class SupplierService {
 
 	private SupplierImportRunResponse toImportRunResponse(SupplierImportRun run) {
 		Supplier supplier = run.getSupplier();
-		return new SupplierImportRunResponse(run.getId(), supplier.getId(), supplier.getCode(), supplier.getName(), run.getSourceType(), run.getStatus(), run.getOriginalFilename(), run.getContentType(), run.getSha256Hash(), run.getUploadedBy(), run.getStartedAt(), run.getFinishedAt(), run.getTotalRows(), run.getCreatedSupplierProducts(), run.getUpdatedSupplierProducts(), run.getPriceSnapshots(), run.getIssuesCount());
+		return new SupplierImportRunResponse(run.getId(), supplier.getId(), supplier.getCode(), supplier.getDisplayNameOrName(), run.getSourceType(), run.getStatus(), run.getOriginalFilename(), run.getContentType(), run.getSha256Hash(), run.getUploadedBy(), run.getStartedAt(), run.getFinishedAt(), run.getTotalRows(), run.getCreatedSupplierProducts(), run.getUpdatedSupplierProducts(), run.getPriceSnapshots(), run.getIssuesCount());
 	}
 
 	private SupplierImportIssueResponse toIssueResponse(SupplierImportIssue issue) {

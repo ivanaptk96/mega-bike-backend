@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <changeSet id="001-add-supplier-display-name" author="codex">
+        <addColumn tableName="supplier">
+            <column name="display_name" type="varchar(200)"/>
+        </addColumn>
+
+        <update tableName="supplier">
+            <column name="display_name" value="Capriolo"/>
+            <where>vat_registration_number = '101443962'</where>
+        </update>
+        <update tableName="supplier">
+            <column name="display_name" value="Jankovic"/>
+            <where>vat_registration_number = '100983990'</where>
+        </update>
+        <update tableName="supplier">
+            <column name="display_name" value="Planet Bike"/>
+            <where>vat_registration_number = '100116685'</where>
+        </update>
+        <update tableName="supplier">
+            <column name="display_name" value="Digor Sport"/>
+            <where>vat_registration_number = '107981016'</where>
+        </update>
+        <update tableName="supplier">
+            <column name="display_name" value="SBM"/>
+            <where>vat_registration_number = '109759263'</where>
+        </update>
+        <update tableName="supplier">
+            <column name="display_name" value="Venera Bike"/>
+            <where>vat_registration_number = '101752528'</where>
+        </update>
+    </changeSet>
+</databaseChangeLog>

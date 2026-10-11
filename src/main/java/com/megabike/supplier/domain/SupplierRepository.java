@@ -12,4 +12,5 @@ public interface SupplierRepository extends JpaRepository<Supplier, UUID> {
 	Optional<Supplier> findByVatRegistrationNumber(String vatRegistrationNumber);
 	Optional<Supplier> findByRegistrationNumber(String registrationNumber);
 	List<Supplier> findAllByOrderByNameAsc();
+	List<Supplier> findByClassificationOrderByNameAsc(SupplierClassification classification);
 }

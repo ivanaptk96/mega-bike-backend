@@ -1,6 +1,7 @@
 package com.megabike.sef.api;
 
 import com.megabike.sef.domain.SefInvoiceDirection;
+import com.megabike.supplier.domain.SupplierClassification;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -8,9 +9,12 @@ import java.util.UUID;
 
 public record SefInvoiceResponse(
 		UUID id,
+		UUID connectionId,
 		Long sefInvoiceId,
 		UUID supplierId,
 		String supplierName,
+		String supplierDisplayName,
+		SupplierClassification supplierClassification,
 		SefInvoiceDirection direction,
 		String globalUniqueId,
 		String cirInvoiceId,
