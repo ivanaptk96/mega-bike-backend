@@ -24,6 +24,8 @@ public record ProductResponse(
 		boolean active,
 		Instant createdAt,
 		Instant updatedAt,
-		java.util.List<UUID> imageIds
+		java.util.List<UUID> imageIds,
+		java.util.List<SupplierOrigin> suppliers
 ) {
+	public record SupplierOrigin(UUID id, String name) {}
 }

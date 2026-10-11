@@ -31,12 +31,14 @@ public class ProductService {
 	private final Clock clock;
 	private final CategoryService categoryService;
 	private final ProductImageService images;
+	private final ProductOriginService origins;
 
-	public ProductService(ProductRepository productRepository, CategoryRepository categoryRepository, CategoryService categoryService, ProductImageService images) {
+	public ProductService(ProductRepository productRepository, CategoryRepository categoryRepository, CategoryService categoryService, ProductImageService images, ProductOriginService origins) {
 		this.productRepository = productRepository;
 		this.categoryRepository = categoryRepository;
 		this.categoryService = categoryService;
 		this.images = images;
+		this.origins = origins;
 		this.clock = Clock.systemUTC();
 	}
 
@@ -162,7 +164,8 @@ public class ProductService {
 				product.isActive(),
 				product.getCreatedAt(),
 				product.getUpdatedAt(),
-				images.ids(product.getId())
+				images.ids(product.getId()),
+				origins.suppliers(product.getId())
 		);
 	}
 

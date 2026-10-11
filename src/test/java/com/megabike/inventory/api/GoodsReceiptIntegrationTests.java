@@ -142,7 +142,10 @@ class GoodsReceiptIntegrationTests {
 				.authorities(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_EMPLOYEE"), new org.springframework.security.core.authority.SimpleGrantedAuthority("PRODUCT_READ"));
 		mvc.perform(get(imageUrl).with(reader)).andExpect(status().isOk()).andExpect(content().contentType("image/jpeg"))
 				.andExpect(content().bytes(new byte[]{(byte) 0xff, (byte) 0xd8, (byte) 0xff}));
-		mvc.perform(get("/api/internal/products/" + productId).with(reader)).andExpect(status().isOk()).andExpect(jsonPath("$.imageIds.length()").value(1));
+		mvc.perform(get("/api/internal/products/" + productId).with(reader)).andExpect(status().isOk())
+				.andExpect(jsonPath("$.imageIds.length()").value(1))
+				.andExpect(jsonPath("$.suppliers.length()").value(1))
+				.andExpect(jsonPath("$.suppliers[0].name").value("Kapriolo test"));
 		mvc.perform(get(imageUrl)).andExpect(status().isForbidden());
 		mvc.perform(get(imageUrl.replace(productId.toString(), existingProduct.toString())).with(reader)).andExpect(status().isNotFound());
 	}
