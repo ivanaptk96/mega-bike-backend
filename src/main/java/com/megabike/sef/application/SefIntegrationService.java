@@ -13,6 +13,9 @@ import com.megabike.sef.domain.SefInvoice;
 import com.megabike.sef.domain.SefInvoiceDirection;
 import com.megabike.sef.domain.SefInvoiceDocument;
 import com.megabike.sef.domain.SefInvoiceDocumentRepository;
+import com.megabike.sef.domain.SefInvoiceDocumentType;
+import com.megabike.sef.domain.SefPdfContent;
+import com.megabike.sef.infrastructure.SefPublicApiClient;
 import com.megabike.sef.domain.SefInvoiceLine;
 import com.megabike.sef.domain.SefInvoiceLineRepository;
 import com.megabike.sef.domain.SefInvoicePayment;
@@ -49,6 +52,7 @@ public class SefIntegrationService {
 	private final SefInvoiceLineRepository lineRepository;
 	private final SefInvoiceVatSummaryRepository vatSummaryRepository;
 	private final SefInvoicePaymentRepository paymentRepository;
+	private final SefPublicApiClient sefClient;
 	private final Clock clock;
 
 	public SefIntegrationService(
@@ -57,7 +61,8 @@ public class SefIntegrationService {
 			SefInvoiceDocumentRepository documentRepository,
 			SefInvoiceLineRepository lineRepository,
 			SefInvoiceVatSummaryRepository vatSummaryRepository,
-			SefInvoicePaymentRepository paymentRepository
+			SefInvoicePaymentRepository paymentRepository,
+			SefPublicApiClient sefClient
 	) {
 		this.connectionRepository = connectionRepository;
 		this.invoiceRepository = invoiceRepository;
@@ -65,6 +70,7 @@ public class SefIntegrationService {
 		this.lineRepository = lineRepository;
 		this.vatSummaryRepository = vatSummaryRepository;
 		this.paymentRepository = paymentRepository;
+		this.sefClient = sefClient;
 		this.clock = Clock.systemUTC();
 	}
 
@@ -141,7 +147,7 @@ public class SefIntegrationService {
 				PageRequest.of(
 						validatePage(page),
 						validateSize(size),
-						Sort.by(Sort.Order.desc("sentAt"), Sort.Order.desc("importedAt"))
+							Sort.by(Sort.Order.desc("sentAt"), Sort.Order.desc("importedAt"), Sort.Order.desc("id"))
 				)
 		).map(this::toInvoiceResponse);
 
@@ -184,13 +190,13 @@ public class SefIntegrationService {
 		);
 	}
 
-	@Transactional(readOnly = true)
+	@Transactional
 	public SefInvoiceDocumentContent getPurchaseInvoiceDocument(UUID connectionId, UUID invoiceId, UUID documentId) {
 		findPurchaseInvoice(connectionId, invoiceId);
 		return findDocument(invoiceId, documentId);
 	}
 
-	@Transactional(readOnly = true)
+	@Transactional
 	public SefInvoiceDocumentContent getInvoiceDocument(UUID connectionId, UUID invoiceId, UUID documentId) {
 		findInvoice(connectionId, invoiceId);
 		return findDocument(invoiceId, documentId);
@@ -199,6 +205,16 @@ public class SefIntegrationService {
 	private SefInvoiceDocumentContent findDocument(UUID invoiceId, UUID documentId) {
 		SefInvoiceDocument document = documentRepository.findByIdAndInvoiceId(documentId, invoiceId)
 				.orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "SEF_DOCUMENT_NOT_FOUND", "SEF invoice document was not found."));
+		if (document.getDocumentType() == SefInvoiceDocumentType.EXTENDED_PDF
+				&& !SefPdfContent.isPdf(document.getContent())) {
+			SefInvoice invoice = document.getInvoice();
+			if (invoice.getDirection() != SefInvoiceDirection.PURCHASE) {
+				throw new ApiException(HttpStatus.BAD_GATEWAY, "SEF_INVALID_PDF", "Sačuvani dokument nije ispravan PDF.");
+			}
+			byte[] content = sefClient.downloadPurchaseInvoicePdf(invoice.getConnection().getApiKeySecret(), invoice.getSefInvoiceId());
+			document.replacePdf(content, Instant.now(clock));
+			documentRepository.save(document);
+		}
 		return new SefInvoiceDocumentContent(document.getFilename(), document.getContentType(), document.getContent());
 	}
 

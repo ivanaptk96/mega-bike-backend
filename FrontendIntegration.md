@@ -254,6 +254,21 @@ GET /api/internal/inventory/products/50000000-0000-0000-0000-000000000001/moveme
 
 Movement list responses are paged and ordered by newest movement first.
 
+## SEF PDF availability
+
+SEF can return HTTP success with a JSON message indicating that PDF generation
+has started. This response is not archived as a PDF. Synchronization retains the
+invoice/XML and continues when a PDF is pending; repeat synchronization to fetch
+the generated file. Document downloads repair previously archived non-PDF
+responses in place, preserving the document ID and updating its hash and time.
+Valid archived PDFs do not trigger another SEF request.
+
+The document endpoint returns `409 / SEF_PDF_NOT_READY` while generation is
+pending and `502 / SEF_INVALID_PDF` for an unexpected non-PDF response. The UI
+shows these messages, supports opening a PDF in a new tab and retains download.
+Service invoices use the same document endpoints as merchandise invoices.
+Invoice pagination includes the unique ID as a final ordering key.
+
 ## Supplier Notes
 
 Current first supplier target:

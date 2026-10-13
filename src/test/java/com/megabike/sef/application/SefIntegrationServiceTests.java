@@ -18,6 +18,9 @@ import com.megabike.sef.domain.SefInvoiceRepository;
 import com.megabike.sef.domain.SefInvoiceVatSummary;
 import com.megabike.sef.domain.SefInvoiceVatSummaryRepository;
 import com.megabike.shared.api.ApiException;
+import com.megabike.sef.infrastructure.SefPublicApiClient;
+import com.megabike.sef.domain.SefPdfContent;
+import org.springframework.http.HttpStatus;
 import com.megabike.supplier.domain.Supplier;
 import com.megabike.supplier.domain.SupplierClassification;
 import org.junit.jupiter.api.BeforeEach;
@@ -31,6 +34,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -43,6 +47,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;
 
 @ExtendWith(MockitoExtension.class)
 class SefIntegrationServiceTests {
@@ -65,6 +71,9 @@ class SefIntegrationServiceTests {
 	@Mock
 	private SefInvoicePaymentRepository paymentRepository;
 
+	@Mock
+	private SefPublicApiClient sefClient;
+
 	private SefIntegrationService service;
 	private SefConnection connection;
 	private SefInvoice invoice;
@@ -79,7 +88,8 @@ class SefIntegrationServiceTests {
 				documentRepository,
 				lineRepository,
 				vatSummaryRepository,
-				paymentRepository
+				paymentRepository,
+				sefClient
 		);
 		connectionId = UUID.randomUUID();
 		invoiceId = UUID.randomUUID();
@@ -177,6 +187,54 @@ class SefIntegrationServiceTests {
 		assertEquals("invoice.xml", response.filename());
 		assertEquals("application/xml", response.contentType());
 		assertArrayEquals(content, response.content());
+	}
+
+	@Test
+	void repairsPreviouslyStoredPendingPdfWithoutChangingDocumentId() {
+		UUID documentId = UUID.randomUUID();
+		SefInvoiceDocument document = pdfDocument(documentId, "{\"message\":\"Extended PDF file creation has been initiated\"}");
+		byte[] pdf = "%PDF-1.7\ncontent".getBytes(StandardCharsets.US_ASCII);
+		when(documentRepository.findByIdAndInvoiceId(documentId, invoiceId)).thenReturn(Optional.of(document));
+		when(sefClient.downloadPurchaseInvoicePdf("secret", 98765L)).thenReturn(pdf);
+
+		var response = service.getPurchaseInvoiceDocument(connectionId, invoiceId, documentId);
+
+		assertArrayEquals(pdf, response.content());
+		assertEquals(documentId, document.getId());
+		assertEquals(SefPdfContent.sha256(pdf), document.getSha256Hash());
+		verify(documentRepository).save(document);
+	}
+
+	@Test
+	void pendingPdfDoesNotOverwriteStoredContentOrReturnAFakePdf() {
+		UUID documentId = UUID.randomUUID();
+		SefInvoiceDocument document = pdfDocument(documentId, "{\"message\":\"pending\"}");
+		byte[] previous = document.getContent();
+		when(documentRepository.findByIdAndInvoiceId(documentId, invoiceId)).thenReturn(Optional.of(document));
+		when(sefClient.downloadPurchaseInvoicePdf("secret", 98765L))
+				.thenThrow(new ApiException(HttpStatus.CONFLICT, "SEF_PDF_NOT_READY", "PDF se priprema."));
+
+		ApiException error = assertThrows(ApiException.class,
+				() -> service.getPurchaseInvoiceDocument(connectionId, invoiceId, documentId));
+
+		assertEquals("SEF_PDF_NOT_READY", error.getCode());
+		assertArrayEquals(previous, document.getContent());
+		verify(documentRepository, never()).save(any());
+	}
+
+	@Test
+	void validPdfUsesArchiveWithoutCallingSefAgain() {
+		UUID documentId = UUID.randomUUID();
+		SefInvoiceDocument document = pdfDocument(documentId, "%PDF-1.7\ncontent");
+		when(documentRepository.findByIdAndInvoiceId(documentId, invoiceId)).thenReturn(Optional.of(document));
+
+		assertArrayEquals(document.getContent(), service.getPurchaseInvoiceDocument(connectionId, invoiceId, documentId).content());
+		verify(sefClient, never()).downloadPurchaseInvoicePdf(any(), org.mockito.ArgumentMatchers.anyLong());
+	}
+
+	private SefInvoiceDocument pdfDocument(UUID id, String content) {
+		return new SefInvoiceDocument(id, invoice, SefInvoiceDocumentType.EXTENDED_PDF,
+				"invoice.pdf", "application/pdf", "old-hash", content.getBytes(StandardCharsets.UTF_8), Instant.now());
 	}
 
 	@Test

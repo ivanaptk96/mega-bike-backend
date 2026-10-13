@@ -61,6 +61,16 @@ public class SefInvoiceDocument {
 	}
 
 	public UUID getId() { return id; }
+
+	public void replacePdf(byte[] content, Instant downloadedAt) {
+		if (!SefPdfContent.isPdf(content)) {
+			throw new IllegalArgumentException("Document content must be a PDF.");
+		}
+		this.content = content;
+		this.contentType = "application/pdf";
+		this.sha256Hash = SefPdfContent.sha256(content);
+		this.downloadedAt = downloadedAt;
+	}
 	public SefInvoice getInvoice() { return invoice; }
 	public SefInvoiceDocumentType getDocumentType() { return documentType; }
 	public String getFilename() { return filename; }

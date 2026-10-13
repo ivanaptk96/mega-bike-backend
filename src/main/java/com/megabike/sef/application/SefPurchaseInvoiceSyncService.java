@@ -9,6 +9,8 @@ import com.megabike.sef.domain.SefInvoiceDirection;
 import com.megabike.sef.domain.SefInvoiceDocument;
 import com.megabike.sef.domain.SefInvoiceDocumentRepository;
 import com.megabike.sef.domain.SefInvoiceDocumentType;
+import com.megabike.sef.domain.SefPdfContent;
+import com.megabike.shared.api.ApiException;
 import com.megabike.sef.domain.SefInvoiceLine;
 import com.megabike.sef.domain.SefInvoiceLineRepository;
 import com.megabike.sef.domain.SefInvoicePayment;
@@ -93,8 +95,13 @@ public class SefPurchaseInvoiceSyncService {
 					documentCount += xmlDownload.created() ? 1 : 0;
 					refreshParsedInvoiceData(invoice, xmlDownload.content());
 
-					DocumentDownload pdfDownload = downloadOrLoadDocument(connection, invoice, SefInvoiceDocumentType.EXTENDED_PDF, "application/pdf", "pdf");
-					documentCount += pdfDownload.created() ? 1 : 0;
+					try {
+						DocumentDownload pdfDownload = downloadOrLoadDocument(connection, invoice, SefInvoiceDocumentType.EXTENDED_PDF, "application/pdf", "pdf");
+						documentCount += pdfDownload.created() ? 1 : 0;
+					} catch (ApiException exception) {
+						// SEF generates PDFs asynchronously. A pending response is not a document.
+						if (!exception.getCode().equals("SEF_PDF_NOT_READY")) throw exception;
+					}
 				}
 			}
 
@@ -219,7 +226,13 @@ public class SefPurchaseInvoiceSyncService {
 
 	private DocumentDownload downloadOrLoadDocument(SefConnection connection, SefInvoice invoice, SefInvoiceDocumentType documentType, String contentType, String extension) {
 		return documentRepository.findByInvoiceIdAndDocumentType(invoice.getId(), documentType)
-				.map(document -> new DocumentDownload(document.getContent(), false))
+				.map(document -> {
+					if (documentType == SefInvoiceDocumentType.EXTENDED_PDF && !SefPdfContent.isPdf(document.getContent())) {
+						document.replacePdf(sefClient.downloadPurchaseInvoicePdf(connection.getApiKeySecret(), invoice.getSefInvoiceId()), Instant.now(clock));
+						documentRepository.save(document);
+					}
+					return new DocumentDownload(document.getContent(), false);
+				})
 				.orElseGet(() -> downloadAndSaveDocument(connection, invoice, documentType, contentType, extension));
 	}
 

@@ -4,6 +4,9 @@ import com.megabike.sef.infrastructure.dto.SefPurchaseInvoiceOverviewDto;
 import com.megabike.sef.infrastructure.dto.SefPurchaseInvoiceStatusChangeDto;
 import com.megabike.sef.infrastructure.dto.SefPurchaseInvoicesDto;
 import com.megabike.sef.infrastructure.dto.SefSimplePurchaseInvoiceDto;
+import com.megabike.sef.domain.SefPdfContent;
+import com.megabike.shared.api.ApiException;
+import org.springframework.http.HttpStatus;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -14,6 +17,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.nio.charset.StandardCharsets;
 
 @Component
 public class SefPublicApiClient {
@@ -101,7 +105,17 @@ public class SefPublicApiClient {
 	}
 
 	public byte[] downloadPurchaseInvoicePdf(String apiKey, long invoiceId) {
-		return download(apiKey, invoiceId, "/api/publicApi/purchase-invoice/pdf", "Failed to download SEF purchase invoice PDF.");
+		byte[] content = download(apiKey, invoiceId, "/api/publicApi/purchase-invoice/pdf", "Failed to download SEF purchase invoice PDF.");
+		if (SefPdfContent.isPdf(content)) {
+			return content;
+		}
+		String response = content == null ? "" : new String(content, StandardCharsets.UTF_8);
+		if (response.contains("Extended PDF file creation has been initiated")) {
+			throw new ApiException(HttpStatus.CONFLICT, "SEF_PDF_NOT_READY",
+					"SEF priprema PDF dokument. Pokušajte ponovo za nekoliko trenutaka.");
+		}
+		throw new ApiException(HttpStatus.BAD_GATEWAY, "SEF_INVALID_PDF",
+				"SEF nije vratio ispravan PDF dokument. Pokušajte ponovo kasnije.");
 	}
 
 	public String subscribeForStatusChangeNotifications(String apiKey) {
