@@ -8,5 +8,10 @@ public record GoodsReceiptRequest(@NotNull UUID stockLocationId) {
 	public record Approval(@NotEmpty @Size(max = 100) List<@Valid Line> lines, @Min(0) long version) {}
 	public record Line(@NotNull UUID lineId, UUID productId, @Valid NewProduct newProduct,
 			@NotNull @DecimalMin(value = "0", inclusive = false) @Digits(integer = 9, fraction = 0) BigDecimal quantity,
-			@NotNull @DecimalMin("0") @Digits(integer = 10, fraction = 2) BigDecimal retailPrice) {}
+			@NotNull @DecimalMin("0") @Digits(integer = 10, fraction = 2) BigDecimal retailPrice, Boolean rememberSupplierCategory) {
+		public Line(UUID lineId, UUID productId, NewProduct newProduct, BigDecimal quantity, BigDecimal retailPrice) {
+			this(lineId, productId, newProduct, quantity, retailPrice, false);
+		}
+		public boolean shouldRememberSupplierCategory() { return Boolean.TRUE.equals(rememberSupplierCategory); }
+	}
 }

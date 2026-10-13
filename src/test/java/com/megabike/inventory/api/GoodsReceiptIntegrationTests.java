@@ -68,6 +68,111 @@ class GoodsReceiptIntegrationTests {
 				.contentType("application/json").content(mapper.writeValueAsString(new GoodsReceiptRequest(location))))
 				.andExpect(status().isOk()).andReturn().getResponse().getContentAsString(), GoodsReceiptResponse.class);
 	}
+	UUID categoryId(String slug) { return jdbc.queryForObject("select id from category where slug=?", UUID.class, slug); }
+	UUID supplierId() { return jdbc.queryForObject("select supplier_id from sef_invoice where id=?", UUID.class, invoiceId); }
+	@Test
+	void suggestsTyreCategoryButLeavesMissingValveForTheEmployee() throws Exception {
+		jdbc.update("update sef_invoice_line set item_name='Unutrašnja guma 29 AV' where invoice_id=?", invoiceId);
+		var suggestion = start().lines().getFirst().categorySuggestion();
+		assertThat(suggestion.categoryId()).isEqualTo(categoryId("delovi-gume-unutrasnje-29-av"));
+		assertThat(suggestion.source()).isEqualTo("NAME_RULE");
+		assertThat(suggestion.requiresSelection()).isFalse();
+		assertThat(suggestion.categoryPath()).isEqualTo("Delovi / Gume / Unutrašnje / 29″ / AV");
+		jdbc.update("update goods_receipt_line set item_name='Unutrašnja guma 29' where receipt_id=(select id from goods_receipt where invoice_id=?)", invoiceId);
+		var incomplete = mapper.readValue(mvc.perform(get("/api/internal/goods-receipts/" + invoiceId))
+				.andExpect(status().isOk()).andReturn().getResponse().getContentAsString(), GoodsReceiptResponse.class).lines().getFirst().categorySuggestion();
+		assertThat(incomplete.requiresSelection()).isTrue();
+		assertThat(incomplete.categoryId()).isEqualTo(categoryId("delovi-gume-unutrasnje-29"));
+	}
+
+	@Test
+	void savesConfirmedChoiceAndUsesItAheadOfNameRulesForAnUnlinkedSku() throws Exception {
+		UUID supplier = supplierId();
+		jdbc.update("update sef_invoice_line set item_name='Lula volana' where invoice_id=?", invoiceId);
+		var receipt = start();
+		assertThat(receipt.lines().getFirst().categorySuggestion().source()).isEqualTo("NAME_RULE");
+		UUID chosen = categoryId("biciklizam-oprema-pumpe");
+		approve(new GoodsReceiptRequest.Approval(List.of(new GoodsReceiptRequest.Line(receipt.lines().getFirst().id(), null,
+				new GoodsReceiptRequest.NewProduct("Pumpa", chosen), new BigDecimal("20"), new BigDecimal("1500"))), receipt.version()));
+		assertThat(jdbc.queryForObject("select category_id from receipt_category_mapping where supplier_id=? and key_type='SUPPLIER_CODE' and source_key='CAP-1'", UUID.class, supplier)).isEqualTo(chosen);
+		assertThat(jdbc.queryForObject("select confirmed_by from receipt_category_mapping where supplier_id=? and key_type='SUPPLIER_CODE' and source_key='CAP-1'", String.class, supplier)).isEqualTo("admin");
+		// Model a later supplier reimport with no product link or recoverable historical link.
+		jdbc.update("update supplier_product set product_id=null where supplier_id=?", supplier);
+		jdbc.update("update goods_receipt_line set product_id=null where receipt_id=(select id from goods_receipt where invoice_id=?)", invoiceId);
+		anotherInvoice();
+		jdbc.update("update sef_invoice_line set item_name='Lula volana' where invoice_id=?", invoiceId);
+		var next = start().lines().getFirst();
+		assertThat(next.productId()).isNull();
+		assertThat(next.categorySuggestion().categoryId()).isEqualTo(chosen);
+		assertThat(next.categorySuggestion().source()).isEqualTo("SAVED_SUPPLIER_CODE");
+	}
+
+	@Test
+	void savedChoicesAreScopedToSupplierAndInactiveCategoriesAreIgnored() throws Exception {
+		UUID other = suppliers.save(new Supplier(UUID.randomUUID(), "OTHER-" + UUID.randomUUID(), "Drugi dobavljač", null, null, "RSD", true, Instant.now())).getId();
+		UUID pump = categoryId("biciklizam-oprema-pumpe");
+		jdbc.update("insert into receipt_category_mapping values (?,'SUPPLIER_CODE','CAP-1',?,'admin',now())", other, pump);
+		jdbc.update("update sef_invoice_line set item_name='Lula volana' where invoice_id=?", invoiceId);
+		var receipt = start();
+		assertThat(receipt.lines().getFirst().categorySuggestion().source()).isEqualTo("NAME_RULE");
+		jdbc.update("insert into receipt_category_mapping values (?,'SUPPLIER_CODE','CAP-1',?,'admin',now())", supplierId(), categoryId("fitnes"));
+		var refreshed = mapper.readValue(mvc.perform(get("/api/internal/goods-receipts/" + invoiceId))
+				.andExpect(status().isOk()).andReturn().getResponse().getContentAsString(), GoodsReceiptResponse.class);
+		assertThat(refreshed.lines().getFirst().categorySuggestion().categoryId()).isEqualTo(categoryId("biciklizam-delovi-lule-i-adapteri"));
+	}
+
+	@Test
+	void suggestsSavedBarcodeAndLearnsSupplierGroupsOnlyWithExplicitSelection() throws Exception {
+		UUID supplier = supplierId();
+		UUID supplierProduct = seedSupplierCatalog(null);
+		UUID pump = categoryId("biciklizam-oprema-pumpe");
+		jdbc.update("update supplier_product set supplier_barcode='00012345', category_text='Oprema dobavljača' where id=?", supplierProduct);
+		jdbc.update("insert into receipt_category_mapping values (?,'BARCODE','00012345',?,'admin',now())", supplier, pump);
+		var receipt = start();
+		assertThat(receipt.lines().getFirst().categorySuggestion().source()).isEqualTo("SAVED_BARCODE");
+		assertThat(receipt.lines().getFirst().categorySuggestion().categoryId()).isEqualTo(pump);
+		assertThat(jdbc.queryForObject("select count(*) from receipt_category_mapping where supplier_id=? and key_type='SUPPLIER_CATEGORY'", Integer.class, supplier)).isZero();
+		approve(new GoodsReceiptRequest.Approval(List.of(new GoodsReceiptRequest.Line(receipt.lines().getFirst().id(), null,
+				new GoodsReceiptRequest.NewProduct("Pumpa", pump), new BigDecimal("20"), new BigDecimal("1500"), true)), receipt.version()));
+		assertThat(jdbc.queryForObject("select category_id from receipt_category_mapping where supplier_id=? and key_type='SUPPLIER_CATEGORY' and source_key='oprema dobavljaca'", UUID.class, supplier)).isEqualTo(pump);
+		anotherInvoice();
+		jdbc.update("update sef_invoice_line set seller_item_id='CAP-OTHER' where invoice_id=?", invoiceId);
+		jdbc.update("insert into supplier_product(id,supplier_id,supplier_code,supplier_product_name,category_text,active,created_at,version) values (?,?,'CAP-OTHER','Nepoznato','OPREMA DOBAVLJAČA',true,now(),0)", UUID.randomUUID(), supplier);
+		var next = start().lines().getFirst();
+		assertThat(next.productId()).isNull();
+		assertThat(next.categorySuggestion().source()).isEqualTo("SAVED_SUPPLIER_CATEGORY");
+		assertThat(next.categorySuggestion().categoryId()).isEqualTo(pump);
+	}
+
+	@Test
+	void confirmingExistingProductKeepsItsCategoryAndDoesNotLearnABroadSupplierGroup() throws Exception {
+		UUID supplierProduct = seedSupplierCatalog(existingProduct);
+		jdbc.update("update supplier_product set category_text='Široka grupa dobavljača' where id=?", supplierProduct);
+		var receipt = start();
+		UUID original = jdbc.queryForObject("select category_id from product where id=?", UUID.class, existingProduct);
+		assertThat(receipt.lines().getFirst().categorySuggestion().source()).isEqualTo("EXISTING_PRODUCT");
+		assertThat(receipt.lines().getFirst().categorySuggestion().categoryId()).isEqualTo(original);
+		approve(approval(receipt, 20, "25000"));
+		assertThat(jdbc.queryForObject("select category_id from product where id=?", UUID.class, existingProduct)).isEqualTo(original);
+		assertThat(jdbc.queryForObject("select count(*) from receipt_category_mapping where supplier_id=? and key_type='SUPPLIER_CATEGORY'", Integer.class, supplierId())).isZero();
+	}
+
+	@Test
+	void failedBatchDoesNotLearnCategoriesOrCreateProducts() throws Exception {
+		var invoice = invoices.findById(invoiceId).orElseThrow();
+		sourceLines.save(new SefInvoiceLine(UUID.randomUUID(), invoice, 2, "2", "Nepoznata stavka", null, "CAP-2", null, "H87",
+				new BigDecimal("2"), new BigDecimal("100"), null, null, "S", new BigDecimal("20"), null, null));
+		var receipt = start();
+		int count = jdbc.queryForObject("select count(*) from product", Integer.class);
+		var n = new GoodsReceiptRequest.NewProduct("Novi artikal", categoryId("biciklizam-oprema-pumpe"));
+		var batch = new GoodsReceiptRequest.Approval(List.of(
+				new GoodsReceiptRequest.Line(receipt.lines().get(0).id(), null, n, new BigDecimal("20"), new BigDecimal("200")),
+				new GoodsReceiptRequest.Line(receipt.lines().get(1).id(), null, n, new BigDecimal("3"), new BigDecimal("200"))), receipt.version());
+		mvc.perform(post("/api/internal/goods-receipts/" + invoiceId + "/approve").contentType("application/json").content(mapper.writeValueAsString(batch)))
+				.andExpect(status().isConflict());
+		assertThat(jdbc.queryForObject("select count(*) from receipt_category_mapping where supplier_id=?", Integer.class, supplierId())).isZero();
+		assertThat(jdbc.queryForObject("select count(*) from product", Integer.class)).isEqualTo(count);
+	}
 	GoodsReceiptRequest.Approval approval(GoodsReceiptResponse r, int quantity, String price) {
 		return new GoodsReceiptRequest.Approval(List.of(new GoodsReceiptRequest.Line(r.lines().getFirst().id(), existingProduct, null,
 				BigDecimal.valueOf(quantity), new BigDecimal(price))), r.version());

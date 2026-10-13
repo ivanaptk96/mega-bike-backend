@@ -36,13 +36,15 @@ public class GoodsReceiptService {
 	private final SupplierProductRepository supplierProducts;
 	private final SupplierRepository suppliers;
 	private final ProductImageService productImages;
+	private final ReceiptCategorySuggestionService categorySuggestions;
 	public GoodsReceiptService(SefInvoiceRepository invoices, SefInvoiceLineRepository invoiceLines,
 			GoodsReceiptRepository receipts, GoodsReceiptLineRepository lines, StockLocationRepository locations,
 			ProductRepository products, ProductService productService, InventoryItemRepository inventory, StockMovementRepository movements, JdbcTemplate jdbc,
-			SupplierProductRepository supplierProducts, SupplierRepository suppliers, ProductImageService productImages) {
+			SupplierProductRepository supplierProducts, SupplierRepository suppliers, ProductImageService productImages, ReceiptCategorySuggestionService categorySuggestions) {
 		this.invoices = invoices; this.invoiceLines = invoiceLines; this.receipts = receipts; this.lines = lines;
 		this.locations = locations; this.products = products; this.productService = productService; this.inventory = inventory; this.movements = movements; this.jdbc = jdbc;
 		this.supplierProducts = supplierProducts; this.suppliers = suppliers; this.productImages = productImages;
+		this.categorySuggestions = categorySuggestions;
 	}
 	@Transactional(readOnly = true)
 	public Page<GoodsReceiptResponse.Summary> list(int page, int size) {
@@ -99,6 +101,8 @@ public class GoodsReceiptService {
 		var byId = new HashMap<UUID, GoodsReceiptLine>(); all.forEach(l -> byId.put(l.getId(), l));
 		var seen = new HashSet<UUID>();
 		var prices = new HashMap<UUID, BigDecimal>();
+		var categoryCatalog = categorySuggestions.catalog();
+		var supplierCategoryChoices = new HashMap<String, UUID>();
 		// Serialize first-time SKU linking across invoices from the same supplier.
 		if (invoice.getSupplier() != null) suppliers.findLockedById(invoice.getSupplier().getId()).orElseThrow();
 		var matches = new HashMap<UUID, Match>();
@@ -125,6 +129,9 @@ public class GoodsReceiptService {
 			var match = matches.get(line.getId());
 			if (match.supplierProduct() == null) match = match(invoice, line);
 			var supplierProduct = match.supplierProduct();
+			String supplierCategoryText = supplierProduct == null ? null : supplierProduct.getCategoryText();
+			if (approval.shouldRememberSupplierCategory() && (supplierCategoryText == null || supplierCategoryText.isBlank()))
+				throw error("RECEIPT_SUPPLIER_CATEGORY_MISSING", "Dobavljač nema kategoriju koju možemo da zapamtimo za ovu stavku.");
 			var automatic = supplierProduct != null && supplierProduct.getProduct() != null ? supplierProduct.getProduct() : match.product();
 			if (automatic != null && approval.productId() != null && !automatic.getId().equals(approval.productId()))
 				throw conflict("Šifra dobavljača je već povezana sa drugim proizvodom. Osvežite prijem.");
@@ -172,6 +179,14 @@ public class GoodsReceiptService {
 			movement.recordReceipt(line.getId(), approval.retailPrice());
 			movements.save(movement);
 			line.receive(product, approval.quantity(), approval.retailPrice(), actor, now);
+			if (approval.shouldRememberSupplierCategory()) {
+				UUID previous = supplierCategoryChoices.putIfAbsent(ReceiptCategoryRules.normalize(supplierCategoryText), product.getCategory().getId());
+				if (previous != null && !previous.equals(product.getCategory().getId()))
+					throw error("RECEIPT_CATEGORY_MAPPING_CONFLICT", "Ista kategorija dobavljača ne može imati dva različita mapiranja u jednoj potvrdi.");
+			}
+			products.flush(); // Category mapping has a foreign key, and confirmation is part of this transaction.
+			categorySuggestions.remember(categoryCatalog, invoice.getSupplier().getId(), line.getSellerItemId(), supplierProduct, product, actor,
+					supplierCategoryText, approval.shouldRememberSupplierCategory());
 		}
 		receipt.updateStatus(all.stream().allMatch(l -> l.getStatus() == ReceiptStatus.RECEIVED) ? ReceiptStatus.RECEIVED : ReceiptStatus.PARTIAL, Instant.now());
 		receipts.flush();
@@ -195,14 +210,18 @@ public class GoodsReceiptService {
 			throw error("RECEIPT_CURRENCY_INVALID", "Prijem trenutno podržava fakture u RSD.");
 	}
 	private GoodsReceiptResponse response(SefInvoice invoice, GoodsReceipt receipt) {
+		var categoryCatalog = categorySuggestions.catalog();
 		var rows = receipt == null ? List.<GoodsReceiptResponse.Line>of() : lines.findByReceiptIdOrderByLineNumberAsc(receipt.getId()).stream()
 				.map(l -> {
-					var product = match(invoice, l).product();
+					var matched = match(invoice, l);
+					var product = matched.product();
 					return new GoodsReceiptResponse.Line(l.getId(), l.getLineNumber(), l.getItemName(), l.getSellerItemId(), l.getUnitCode(),
 						l.getExpectedQuantity(), l.getReceivedQuantity(), l.getPurchasePrice(), l.getVatRate(),
 						l.getRetailPrice() != null ? l.getRetailPrice() : product == null ? null : product.getRetailPrice(),
 						product == null ? null : product.getId(), product == null ? null : product.getName(), l.getStatus(), l.getApprovedBy(), l.getApprovedAt(),
-						product == null ? l.getReservedProductCode() : product.getProductCode(), imageUrl(invoice, l, product));
+						product == null ? l.getReservedProductCode() : product.getProductCode(), imageUrl(invoice, l, product),
+						categorySuggestions.suggest(categoryCatalog, invoice.getSupplier().getId(), l.getSellerItemId(), l.getItemName(), matched.supplierProduct(), product),
+						matched.supplierProduct() == null ? null : matched.supplierProduct().getCategoryText());
 				}).toList();
 		return new GoodsReceiptResponse(invoice.getId(), invoice.getConnection().getId(), invoice.getInvoiceNumber(), supplierName(invoice),
 				receipt == null ? ReceiptStatus.PENDING : receipt.getStatus(), receipt == null ? null : receipt.getStockLocation().getId(),

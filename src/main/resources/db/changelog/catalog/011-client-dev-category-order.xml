@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+    <changeSet id="011-client-dev-category-order" author="codex">
+        <!-- Earlier dev reconciliation preserves IDs but predates sort_order. -->
+        <sql>
+            UPDATE category SET sort_order = CASE slug
+                WHEN 'biciklizam-bicikli' THEN 0
+                WHEN 'biciklizam-delovi' THEN 10
+                WHEN 'biciklizam-bicikli-mtb' THEN 10
+                WHEN 'biciklizam-bicikli-drumski' THEN 60 END
+            WHERE slug IN ('biciklizam-bicikli', 'biciklizam-delovi', 'biciklizam-bicikli-mtb', 'biciklizam-bicikli-drumski');
+        </sql>
+    </changeSet>
+</databaseChangeLog>

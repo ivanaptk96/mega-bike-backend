@@ -11,6 +11,7 @@ public record CategoryResponse(
 		String parentName,
 		boolean active,
 		boolean webVisible,
+		int sortOrder,
 		Instant createdAt,
 		Instant updatedAt
 ) {

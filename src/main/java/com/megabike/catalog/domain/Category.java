@@ -36,6 +36,9 @@ public class Category {
 	@Column(name = "web_visible", nullable = false)
 	private boolean webVisible = true;
 
+	@Column(name = "sort_order", nullable = false)
+	private int sortOrder = 1000;
+
 	@Column(name = "created_at", nullable = false)
 	private Instant createdAt;
 
@@ -87,6 +90,8 @@ public class Category {
 	}
 
 	public boolean isWebVisible() { return webVisible; }
+
+	public int getSortOrder() { return sortOrder; }
 
 	public Instant getCreatedAt() {
 		return createdAt;

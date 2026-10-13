@@ -20,8 +20,23 @@ supplier-product description remains a bounded preview. Daily export prices are
 contracted wholesale prices without VAT, as confirmed by the portal's separate
 `price_incl_tax` fields. Quantity comes from the export's `KOL NA` column.
 
-The catalog is available under the Planet Bike supplier details page after the
-updated backend is started manually. Catalog, raw detail and saved image API
+The Planet Bike supplier details page has two tabs: catalogue cards with saved
+images and specifications, and a supplier stock table with quantity, wholesale
+price, availability filters and each variant's stock-list date. Both use the
+same captured variants; stock is separate from Mega Bike inventory. The stock
+tab also exposes the existing CSV upload for daily updates. Missing quantities
+remain unknown, rather than being displayed as zero. Each variant uses its
+latest saved snapshot, so a partial import does not reset omitted variants.
+
+`GET /api/internal/suppliers/{id}/catalog` accepts `availability=ALL`,
+`AVAILABLE`, `OUT_OF_STOCK` or `UNKNOWN`, alongside search and pagination.
+The older `availableOnly=true` parameter still works.
+`GET /api/internal/suppliers/{id}/catalog/summary` returns unfiltered variant
+counts, available units, catalogue capture time and latest stock-list date/import
+time. These figures remain visible when a search returns no results.
+
+The page is available after the updated backend is started manually.
+Catalog, summary, raw detail and saved image API
 endpoints all require `SUPPLIER_MANAGE`. Images are served from our database and
 do not need the supplier's login session.
 

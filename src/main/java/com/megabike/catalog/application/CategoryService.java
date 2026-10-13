@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+import java.util.Comparator;
 
 @Service
 public class CategoryService {
@@ -54,6 +55,7 @@ public class CategoryService {
 	public List<CategoryResponse> list() {
 		return categoryRepository.findAllByOrderByNameAsc().stream()
 				.filter(this::isWebVisible)
+				.sorted(Comparator.comparingInt(Category::getSortOrder).thenComparing(Category::getName))
 				.map(this::toResponse)
 				.toList();
 	}
@@ -145,6 +147,7 @@ public class CategoryService {
 				parent == null ? null : parent.getName(),
 				category.isActive(),
 				isWebVisible(category),
+				category.getSortOrder(),
 				category.getCreatedAt(),
 				category.getUpdatedAt()
 		);

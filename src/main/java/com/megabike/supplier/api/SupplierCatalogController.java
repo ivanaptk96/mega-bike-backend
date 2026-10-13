@@ -23,10 +23,14 @@ public class SupplierCatalogController {
 	public SupplierCatalogService.CatalogPage list(@PathVariable UUID supplierId,
 			@RequestParam(required = false) String query,
 			@RequestParam(defaultValue = "false") boolean availableOnly,
+			@RequestParam(defaultValue = "ALL") String availability,
 			@RequestParam(defaultValue = "0") int page,
 			@RequestParam(defaultValue = "20") int size) {
-		return service.list(supplierId, query, availableOnly, page, size);
+		return service.list(supplierId, query, availableOnly, availability, page, size);
 	}
+
+	@GetMapping("/suppliers/{supplierId}/catalog/summary")
+	public SupplierCatalogService.CatalogSummary summary(@PathVariable UUID supplierId) { return service.summary(supplierId); }
 
 	@GetMapping("/supplier-catalog-products/{id}")
 	public Map<String, Object> details(@PathVariable UUID id) { return service.details(id); }

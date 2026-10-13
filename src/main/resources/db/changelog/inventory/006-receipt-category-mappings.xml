@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+    <changeSet id="006-receipt-category-mappings" author="codex">
+        <createTable tableName="receipt_category_mapping">
+            <column name="supplier_id" type="uuid"><constraints nullable="false" primaryKey="true" primaryKeyName="pk_receipt_category_mapping"/></column>
+            <column name="key_type" type="varchar(20)"><constraints nullable="false" primaryKey="true" primaryKeyName="pk_receipt_category_mapping"/></column>
+            <column name="source_key" type="varchar(300)"><constraints nullable="false" primaryKey="true" primaryKeyName="pk_receipt_category_mapping"/></column>
+            <column name="category_id" type="uuid"><constraints nullable="false"/></column>
+            <column name="confirmed_by" type="varchar(320)"><constraints nullable="false"/></column>
+            <column name="confirmed_at" type="timestamp with time zone"><constraints nullable="false"/></column>
+        </createTable>
+        <addForeignKeyConstraint baseTableName="receipt_category_mapping" baseColumnNames="supplier_id" referencedTableName="supplier" referencedColumnNames="id" constraintName="fk_receipt_category_supplier" onDelete="CASCADE"/>
+        <addForeignKeyConstraint baseTableName="receipt_category_mapping" baseColumnNames="category_id" referencedTableName="category" referencedColumnNames="id" constraintName="fk_receipt_category_category" onDelete="RESTRICT"/>
+    </changeSet>
+</databaseChangeLog>
